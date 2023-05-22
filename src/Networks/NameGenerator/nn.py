@@ -120,6 +120,8 @@ class Network(Module):
     def __init__(self, layers):
         super().__init__()
         self.layers = layers
+        for p in self.parameters():
+            p.requires_grad = True
     @Module.training.setter    
     def training(self, value):
         self._trainingMode = value
