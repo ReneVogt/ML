@@ -7,6 +7,7 @@ import transformer as t
 block_size =  8 # number of consecutive characters to predict from
 batch_size = 32 # mini-batch size
 embedding_size = 32 # size of the embedding vectors
+head_count = 4
 max_iterations = 5000
 eval_interval = 500
 learning_rate = 1e-3
@@ -65,7 +66,7 @@ def estimate_loss():
     model.train()
     return out
 
-model = t.LanguageModel(vocabulary_size, block_size, embedding_size, embedding_size, device)
+model = t.LanguageModel(vocabulary_size, block_size, embedding_size, head_count, device)
 m = model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 

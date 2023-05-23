@@ -26,15 +26,62 @@ class Head(nn.Module):
         return affinities @ v
 
 #
+# MultiHeadAttention
+#
+class MultiHeadAttention(nn.Module):
+    def __init__(self, block_size, num_heads, embedding_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(block_size, embedding_size, embedding_size//num_heads) for _ in range(num_heads)])
+        self.proj = nn.Linear(embedding_size, embedding_size)
+
+    def forward(self, x):
+        out = torch.cat([h(x) for h in self.heads], dim =-1)        
+        return self.proj(out)
+    
+#
+# FeedForward
+#
+class FeedForward(nn.Module):
+    def __init__(self, embedding_size):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(embedding_size, 4*embedding_size),
+            nn.ReLU(),
+            nn.Linear(4*embedding_size, embedding_size)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+#
+# Block
+#
+class Block(nn.Module):
+    def __init__(self, block_size, embedding_size, head_count):
+        super().__init__()
+        self.attention = MultiHeadAttention(block_size, head_count, embedding_size)
+        self.ffwd = FeedForward(embedding_size)
+
+    def forward(self, x):
+        x = x + self.attention(x)
+        x = x + self.ffwd(x)
+        return x
+
+#
 # LanguageModel
 #
 class LanguageModel(nn.Module):
-    def __init__(self, vocabulary_size, block_size, embedding_size, head_size, device = 'cpu'):
+    def __init__(self, vocabulary_size, block_size, embedding_size, head_count, device = 'cpu'):
         super().__init__()
         self.block_size = block_size
         self.token_embedding = nn.Embedding(vocabulary_size, embedding_size)
         self.position_embedding = nn.Embedding(block_size, embedding_size)
-        self.attention_head = Head(block_size, embedding_size, head_size)
+        self.blocks = nn.Sequential(
+            Block(block_size, embedding_size, head_count),
+            Block(block_size, embedding_size, head_count),
+            Block(block_size, embedding_size, head_count),
+            Block(block_size, embedding_size, head_count)
+        )
         self.linearHead = nn.Linear(embedding_size, vocabulary_size)
         self.device = device
 
@@ -42,8 +89,8 @@ class LanguageModel(nn.Module):
         B,T = idx.shape
         token_embeddings = self.token_embedding(idx)
         position_embeddings = self.position_embedding(torch.arange(T, device=self.device))
-        x = token_embeddings + position_embeddings
-        x = self.attention_head(x)
+        x = token_embeddings + position_embeddings        
+        x = self.blocks(x)
         logits = self.linearHead(x)
         if targets is None:
             loss = None
