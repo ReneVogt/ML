@@ -4,15 +4,11 @@ import transformer as t
 #
 # Hyper parameter
 #
-block_size =  8 # number of consecutive characters to predict from
-batch_size = 32 # mini-batch size
-embedding_size = 32 # size of the embedding vectors
-head_count = 4
-max_iterations = 5000
-eval_interval = 500
-learning_rate = 1e-3
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 200
+batch_size      = 64    # mini-batch size
+max_iterations  = 5000
+eval_interval   = 500
+learning_rate   = 3e-4
+eval_iters      = 200
 
 torch.manual_seed(1337)
 
@@ -24,7 +20,7 @@ torch.manual_seed(1337)
 with open('TrainingData/shakespeare.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 chars = sorted(list(set(text)))
-vocabulary_size = len(chars)
+t.vocabulary_size = len(chars)
 
 # Build encoder and decoder
 stoi = {ch:i for i,ch in enumerate(chars)}
@@ -43,10 +39,10 @@ validation_data = data[n:]
 #
 def get_batch(split):
     data = training_data if split == 'train' else validation_data
-    ix = torch.randint(len(data) - block_size, (batch_size, ))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    x,y = x.to(device), y.to(device)
+    ix = torch.randint(len(data) - t.sample_size, (batch_size, ))
+    x = torch.stack([data[i:i+t.sample_size] for i in ix])
+    y = torch.stack([data[i+1:i+t.sample_size+1] for i in ix])
+    x,y = x.to(t.device), y.to(t.device)
     return x,y
 
 #
@@ -66,9 +62,11 @@ def estimate_loss():
     model.train()
     return out
 
-model = t.LanguageModel(vocabulary_size, block_size, embedding_size, head_count, device)
-m = model.to(device)
+model = t.LanguageModel()
+print(f'Number of parameters: {sum(p.nelement() for p in model.parameters())}')
+m = model.to(t.device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
 
 for iter in range(max_iterations):
     if iter % eval_interval == 0:
@@ -81,6 +79,6 @@ for iter in range(max_iterations):
     loss.backward()
     optimizer.step()
 
-context = torch.zeros((1,1), dtype=torch.long, device=device)
+context = torch.zeros((1,1), dtype=torch.long, device=t.device)
 print(decode(m.generate(context, max_tokens=500)[0].tolist()))
 

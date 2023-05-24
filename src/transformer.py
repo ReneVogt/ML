@@ -2,16 +2,27 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+vocabulary_size             = 65
+attention_heads_per_block   = 4
+attention_blocks            = 4
+sample_size                 = 128   # number of consecutive characters to predict from
+embedding_size              = 128   # size of the embedding vectors
+dropout                     = 0.2
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 #
 # Head
 #
 class Head(nn.Module):
-    def __init__(self, block_size, embedding_size, head_size):
+    def __init__(self):
         super().__init__()
+        head_size = embedding_size//attention_heads_per_block
         self.key = nn.Linear(embedding_size, head_size, bias=False)
         self.query = nn.Linear(embedding_size, head_size, bias=False)
         self.value = nn.Linear(embedding_size, head_size, bias=False)
-        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.register_buffer('tril', torch.tril(torch.ones(sample_size, sample_size)))
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         B,T,C = x.shape
@@ -21,6 +32,7 @@ class Head(nn.Module):
         affinities = q @ k.transpose(-2,-1) * C**-0.5
         affinities = affinities.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         affinities = F.softmax(affinities, dim=-1)
+        affinities = self.dropout(affinities)
 
         v = self.value(x)
         return affinities @ v
@@ -29,25 +41,29 @@ class Head(nn.Module):
 # MultiHeadAttention
 #
 class MultiHeadAttention(nn.Module):
-    def __init__(self, block_size, num_heads, embedding_size):
+    def __init__(self):
         super().__init__()
-        self.heads = nn.ModuleList([Head(block_size, embedding_size, embedding_size//num_heads) for _ in range(num_heads)])
+        self.heads = nn.ModuleList([Head() for _ in range(attention_heads_per_block)])
         self.proj = nn.Linear(embedding_size, embedding_size)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        out = torch.cat([h(x) for h in self.heads], dim =-1)        
-        return self.proj(out)
+        out = torch.cat([h(x) for h in self.heads], dim =-1)
+        out = self.proj(out)
+        out = self.dropout(out)        
+        return out
     
 #
 # FeedForward
 #
 class FeedForward(nn.Module):
-    def __init__(self, embedding_size):
+    def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(embedding_size, 4*embedding_size),
             nn.ReLU(),
-            nn.Linear(4*embedding_size, embedding_size)
+            nn.Linear(4*embedding_size, embedding_size),
+            nn.Dropout(dropout)
         )
 
     def forward(self, x):
@@ -57,31 +73,28 @@ class FeedForward(nn.Module):
 # Block
 #
 class Block(nn.Module):
-    def __init__(self, block_size, embedding_size, head_count):
+    def __init__(self):
         super().__init__()
-        self.attention = MultiHeadAttention(block_size, head_count, embedding_size)
-        self.ffwd = FeedForward(embedding_size)
+        self.layernorm1 = nn.LayerNorm(embedding_size)
+        self.attention = MultiHeadAttention()
+        self.layernorm2 = nn.LayerNorm(embedding_size)
+        self.ffwd = FeedForward()
 
     def forward(self, x):
-        x = x + self.attention(x)
-        x = x + self.ffwd(x)
+        x = x + self.attention(self.layernorm1(x))
+        x = x + self.ffwd(self.layernorm2(x))
         return x
 
 #
 # LanguageModel
 #
 class LanguageModel(nn.Module):
-    def __init__(self, vocabulary_size, block_size, embedding_size, head_count, device = 'cpu'):
+    def __init__(self):
         super().__init__()
-        self.block_size = block_size
         self.token_embedding = nn.Embedding(vocabulary_size, embedding_size)
-        self.position_embedding = nn.Embedding(block_size, embedding_size)
-        self.blocks = nn.Sequential(
-            Block(block_size, embedding_size, head_count),
-            Block(block_size, embedding_size, head_count),
-            Block(block_size, embedding_size, head_count),
-            Block(block_size, embedding_size, head_count)
-        )
+        self.position_embedding = nn.Embedding(sample_size, embedding_size)
+        self.blocks = nn.Sequential(*[Block() for _ in range(attention_blocks)])
+        self.layernorm = nn.LayerNorm(embedding_size)
         self.linearHead = nn.Linear(embedding_size, vocabulary_size)
         self.device = device
 
@@ -91,6 +104,7 @@ class LanguageModel(nn.Module):
         position_embeddings = self.position_embedding(torch.arange(T, device=self.device))
         x = token_embeddings + position_embeddings        
         x = self.blocks(x)
+        x = self.layernorm(x)
         logits = self.linearHead(x)
         if targets is None:
             loss = None
@@ -104,7 +118,7 @@ class LanguageModel(nn.Module):
     def generate(self, idx, max_tokens):
         for _ in range(max_tokens):
             # take last block_size tokens
-            idx_crop = idx[:, -self.block_size:]
+            idx_crop = idx[:, -sample_size:]
             logits, _ = self(idx_crop)
             logits = logits[:, -1, :]
             probs = F.softmax(logits, dim=-1)
