@@ -12,6 +12,7 @@ public sealed class Transformer
     public IReadOnlyDictionary<string, int> Encoder { get; }
     public IReadOnlyDictionary<int, string> Decoder { get; }
     public int SampleSize { get; }
+    public int VocabularySize => Encoder.Count;
 
     Transformer(InferenceSession model, Dictionary<int, string> decoder)
     {
@@ -36,11 +37,11 @@ public sealed class Transformer
             var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(_model.InputNames[0], contextTensor) };
             using var results = _model.Run(inputs);
             var result = results.First().AsTensor<float>();
-            var distribution = new double[Decoder.Count];
-            for (var i = 0; i < Decoder.Count; i++)
+            var distribution = new double[VocabularySize];
+            for (var i = 0; i < VocabularySize; i++)
                 distribution[i] = Math.Exp(result[0,SampleSize-1, i]);
             var sum = distribution.Sum();
-            for (var i = 0; i < Decoder.Count; i++)
+            for (var i = 0; i < VocabularySize; i++)
                 distribution[i] /= sum;
 
             var rand = _random.NextSingle();
