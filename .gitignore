@@ -351,3 +351,4 @@ MigrationBackup/
 /src/script.dll
 /src/NN.Tests/tictactoe.dat
 TrainingData/shakespeare.txt
+src/dev/commits.txt

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="shakespeare.onnx" />
+    <None Remove="vocabulary.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="shakespeare.onnx" />
+    <EmbeddedResource Include="vocabulary.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Transformer\Transformer.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Transformer;
 
-public sealed class Transformer
+public sealed class TransformerModel
 {
     readonly Random _random = new Random();
     readonly InferenceSession _model;
@@ -14,7 +14,7 @@ public sealed class Transformer
     public int SampleSize { get; }
     public int VocabularySize => Encoder.Count;
 
-    Transformer(InferenceSession model, Dictionary<int, string> decoder)
+    TransformerModel(InferenceSession model, IDictionary<int, string> decoder)
     {
         _model = model;
         Decoder = decoder.AsReadOnly();
@@ -60,13 +60,14 @@ public sealed class Transformer
         }
     }
 
-    public static Transformer Load(string vocublaryPath, string modelPath)
+    public static TransformerModel Load(string vocublaryPath, string modelPath)
     {
         var model = new InferenceSession(modelPath);
         var decoder = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(vocublaryPath))!.ToDictionary(x => int.Parse(x.Key), x => x.Value);
        
-        return new Transformer(model, decoder);
+        return new TransformerModel(model, decoder);
     }
+    public static TransformerModel Load(IDictionary<int, string> decoder, byte[] model) => new TransformerModel(new InferenceSession(model), decoder);
 }
 
 /*

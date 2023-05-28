@@ -1,5 +1,6 @@
-﻿var transformer = Transformer.Transformer.Load("vocabulary.json", "shakespeare.onnx");
-foreach(var sample in transformer.Generate())
+﻿using InfiniteShakespeare;
+
+foreach (var sample in Shakespeare.Generate())
 {
     Console.Write(sample);
     if (Console.KeyAvailable)
