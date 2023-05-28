@@ -1,11 +1,31 @@
-﻿using InfiniteShakespeare;
+﻿using CommitMessageGenerator;
+using InfiniteShakespeare;
 
-foreach (var sample in Shakespeare.Generate())
+#pragma warning disable CS8321
+
+TestCommitMessageGeneartor();
+
+static void TestShakespeare()
 {
-    Console.Write(sample);
-    if (Console.KeyAvailable)
+    foreach (var sample in Shakespeare.Generate())
     {
-        Console.ReadKey(true);
-        Console.ReadKey(true);
+        Console.Write(sample);
+        if (Console.KeyAvailable)
+        {
+            Console.ReadKey(true);
+            Console.ReadKey(true);
+        }
+    }
+}
+static void TestCommitMessageGeneartor()
+{
+    foreach (var sample in MessageGenerator.Generate())
+    {
+        Console.WriteLine(sample);
+        if (Console.KeyAvailable)
+        {
+            Console.ReadKey(true);
+            Console.ReadKey(true);
+        }
     }
 }

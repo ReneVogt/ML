@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CommitMessageGenerator\CommitMessageGenerator.csproj" />
     <ProjectReference Include="..\InfiniteShakespeare\InfiniteShakespeare.csproj" />
     <ProjectReference Include="..\Transformer\Transformer.csproj" />
   </ItemGroup>
