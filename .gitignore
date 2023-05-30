@@ -351,6 +351,4 @@ MigrationBackup/
 /src/script.dll
 /src/NN.Tests/tictactoe.dat
 TrainingData/shakespeare.txt
-src/dev/commits.txt
-/src/use/CommitMessageGenerator/vocabulary.json
-/src/use/CommitMessageGenerator/commits.onnx
+src/dev/commits/

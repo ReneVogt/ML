@@ -1,15 +1,19 @@
 ﻿using Newtonsoft.Json;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
 using Transformer;
 
 namespace CommitMessageGenerator;
 
 public static class MessageGenerator
 {
-    static readonly Lazy<TransformerModel> _transformerInit = new Lazy<TransformerModel>(CreateTransformer);
-    static TransformerModel Model => _transformerInit.Value;
+    static readonly Lazy<IEnumerator<string>> _transformerInit = new Lazy<IEnumerator<string>>(CreateTransformer);
+    static IEnumerator<string> Generator => _transformerInit.Value;
 
-    static TransformerModel CreateTransformer()
+    static readonly StringBuilder messageBuilder = new();
+
+    static IEnumerator<string> CreateTransformer()
     {
         var assembly = Assembly.GetExecutingAssembly();
 
@@ -20,9 +24,30 @@ public static class MessageGenerator
         using var modelStream = assembly.GetManifestResourceStream($"{nameof(CommitMessageGenerator)}.commits.onnx")!;
         var model = new byte[modelStream.Length];
         modelStream.Read(model, 0, model.Length);
-        return TransformerModel.Load(decoder, model);
+        var transformer = TransformerModel.Load(decoder, model);
+        transformer.EmptyIndex = decoder.First(x => x.Value == "\n\n\n").Key;
+        return transformer.Generate().GetEnumerator();
     }
-    public static string Next() => string.Concat(Model.Generate().TakeWhile(s => s != "\n"));
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public static string Next()
+    {
+        while(Generator.MoveNext())
+        {
+            var s = Generator.Current;
+            var index = s.IndexOf('\n');
+            if (index > -1)
+            {
+                messageBuilder.Append(s[0..index]);
+                var message = messageBuilder.ToString();
+                messageBuilder.Clear();
+                if (index < s.Length - 1)
+                    messageBuilder.Append(s[index + 1]);
+                return message;
+            }
+            messageBuilder.Append(s);
+        }
+        return messageBuilder.ToString();
+    }
     public static IEnumerable<string> Generate()
     {
         while (true) yield return Next();

@@ -13,6 +13,7 @@ public sealed class TransformerModel
     public IReadOnlyDictionary<int, string> Decoder { get; }
     public int SampleSize { get; }
     public int VocabularySize => Encoder.Count;
+    public int EmptyIndex { get; set; }
 
     TransformerModel(InferenceSession model, IDictionary<int, string> decoder)
     {
@@ -25,7 +26,7 @@ public sealed class TransformerModel
     public IEnumerable<string> Generate() => Continue(Array.Empty<string>());
     public IEnumerable<string> Continue(string[] previousTokens)
     {
-        var context = Enumerable.Repeat(0, Math.Max(SampleSize - previousTokens.Length, 0))
+        var context = Enumerable.Repeat(EmptyIndex, Math.Max(SampleSize - previousTokens.Length, 0))
             .Concat(previousTokens.TakeLast(SampleSize).Select(s => Encoder[s])).ToArray();
 
         var contextTensor = new DenseTensor<long>(new[] { 1, SampleSize });

@@ -7,11 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="commits.onnx" />
     <None Remove="vocabulary.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="vocabulary.json" />
+    <EmbeddedResource Include="..\..\dev\commits\vocabulary.json" Link="vocabulary.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\dev\commits\commits.onnx" Link="commits.onnx" />
   </ItemGroup>
 
   <ItemGroup>

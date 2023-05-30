@@ -4,6 +4,7 @@ using InfiniteShakespeare;
 #pragma warning disable CS8321
 
 TestCommitMessageGeneartor();
+//TestShakespeare();
 
 static void TestShakespeare()
 {
