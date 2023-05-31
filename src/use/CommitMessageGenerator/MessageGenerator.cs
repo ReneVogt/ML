@@ -25,7 +25,7 @@ public static class MessageGenerator
         var model = new byte[modelStream.Length];
         modelStream.Read(model, 0, model.Length);
         var transformer = TransformerModel.Load(decoder, model);
-        transformer.EmptyIndex = decoder.First(x => x.Value == "\n\n\n").Key;
+        transformer.EmptyIndex = decoder.First(x => x.Value.EndsWith("\n")).Key;
         return transformer.Generate().GetEnumerator();
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
