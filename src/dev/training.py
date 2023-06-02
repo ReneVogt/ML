@@ -1,84 +1,64 @@
 import torch
-import transformer as t
+import json
+import tokenizer
 
-#
-# Hyper parameter
-#
-batch_size      = 64    # mini-batch size
-max_iterations  = 5000
-eval_interval   = 500
-learning_rate   = 3e-4
-eval_iters      = 200
+def initializeTrainingData(topic):
+    # read in file
+    with open(f'{topic}/{topic}.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+    # tokenize
+    decoder, tokens = tokenizer.tokenize(text, 300)
+    
+    # save tokens
+    with open(f'{topic}/{topic}.tokens', 'w') as file:
+        json.dump(tokens, file)
 
-torch.manual_seed(1337)
+    # save vocabulary
+    dictionary = {str(k): v for k, v in decoder.items()}
+    with open(f'{topic}/vocabulary.json', 'w') as file:
+        json.dump(dictionary, file)
 
-#
-# Prepare training data
-#
+    return decoder, tokens
 
-# read in file
-with open('TrainingData/shakespeare.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-chars = sorted(list(set(text)))
-t.vocabulary_size = len(chars)
+def loadTrainingData(topic):
+    with open(f'{topic}/{topic}.tokens', 'r') as file:
+        tokens = json.load(file)
+    with open(f'{topic}/vocabulary.json', 'r') as file:
+        decoder = json.load(file)
+    decoder = {int(k): v for k, v in decoder.items()}    
+    
+    return decoder, tokens
 
-# Build encoder and decoder
-stoi = {ch:i for i,ch in enumerate(chars)}
-itos = {i:ch for i,ch in enumerate(chars)}
-encode = lambda s: [stoi[c] for c in s]
-decode = lambda l: ''.join([itos[i] for i in l])
+def createDataTensors(tokens):
+    data = torch.tensor(tokens, dtype=torch.long)
+    n = int(0.9*len(data))
+    training_data = data[:n]
+    validation_data = data[n:]
+    return {'train': training_data, 'val': validation_data}
 
-# create data tensors
-data = torch.tensor(encode(text), dtype=torch.long)
-n = int(0.9*len(data))
-training_data = data[:n]
-validation_data = data[n:]
-
-#
-# mini-batch creation
-#
-def get_batch(split):
-    data = training_data if split == 'train' else validation_data
-    ix = torch.randint(len(data) - t.sample_size, (batch_size, ))
-    x = torch.stack([data[i:i+t.sample_size] for i in ix])
-    y = torch.stack([data[i+1:i+t.sample_size+1] for i in ix])
-    x,y = x.to(t.device), y.to(t.device)
+def get_batch(data, sample_size, batch_size, device):
+    ix = torch.randint(len(data) - sample_size, (batch_size, ))
+    x = torch.stack([data[i:i+sample_size] for i in ix])
+    y = torch.stack([data[i+1:i+sample_size+1] for i in ix])
+    x,y = x.to(device), y.to(device)
     return x,y
 
-#
-# evaluation
-#
 @torch.no_grad()
-def estimate_loss():
+def estimate_loss(model, data, iterations, sample_size, batch_size, device):
     out = {}
-    model.eval()
+    training = model.training
+    if training:
+        model.eval()
+
     for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            x, y = get_batch(split)
+        losses = torch.zeros(iterations)
+        for k in range(iterations):
+            x, y = get_batch(data[split], sample_size, batch_size, device)
             _, loss = model(x, y)
             losses[k] = loss.item()
         out[split] = losses.mean()
-    model.train()
+
+    if training:
+        model.train()
     return out
-
-model = t.LanguageModel()
-print(f'Number of parameters: {sum(p.nelement() for p in model.parameters())}')
-m = model.to(t.device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-
-
-for iter in range(max_iterations):
-    if iter % eval_interval == 0:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-
-    xb, yb = get_batch('train')
-    _, loss = model(xb,yb)
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-context = torch.zeros((1,1), dtype=torch.long, device=t.device)
-print(decode(m.generate(context, max_tokens=500)[0].tolist()))
 
