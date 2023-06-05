@@ -351,4 +351,5 @@ MigrationBackup/
 
 #custom
 src/dev/commits/
+src/dev/shakespeare/
 src/dev/test.ipynb

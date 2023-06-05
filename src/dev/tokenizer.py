@@ -51,5 +51,3 @@ def bytePairEncoding(text, mergeSteps = 0, debug = False):
             index += 1
 
     return decoder, tokens
-                
-            

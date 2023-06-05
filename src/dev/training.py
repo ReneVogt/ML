@@ -2,12 +2,12 @@ import torch
 import json
 import tokenizer
 
-def initializeTrainingData(topic):
+def initializeTrainingData(topic, mergeSteps = 0, debug = False):
     # read in file
     with open(f'{topic}/{topic}.txt', 'r', encoding='utf-8') as f:
         text = f.read()
     # tokenize
-    decoder, tokens = tokenizer.tokenize(text, 300)
+    decoder, tokens = tokenizer.bytePairEncoding(text, mergeSteps, debug)
     
     # save tokens
     with open(f'{topic}/{topic}.tokens', 'w') as file:

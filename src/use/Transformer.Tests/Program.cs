@@ -3,18 +3,38 @@ using InfiniteShakespeare;
 
 #pragma warning disable CS8321
 
-TestCommitMessageGeneartor();
-//TestShakespeare();
+//TestCommitMessageGeneartor();
+TestShakespeare();
+
 
 static void TestShakespeare()
 {
-    foreach (var sample in Shakespeare.Generate())
+    const int outputLength = 200;
+    while (true) 
     {
-        Console.Write(sample);
-        if (Console.KeyAvailable)
+        Console.Write("Ask William: ");
+        var context = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(context)) return;
+        var slashN = false;
+        var length = 0;
+        foreach (var sample in Shakespeare.Continue(context))
         {
-            Console.ReadKey(true);
-            Console.ReadKey(true);
+            var index = sample.IndexOf("\n\n");
+            if (index >= 0 && length + index >= outputLength)
+            {
+                Console.Write(sample[0..(index + 2)]);
+                break;
+            }
+
+            if (slashN && sample.StartsWith("\n") && length > outputLength)
+            {
+                Console.Write('\n');
+                break;
+            }
+
+            Console.Write(sample);
+            length += sample.Length;
+            slashN = sample.EndsWith("\n");
         }
     }
 }

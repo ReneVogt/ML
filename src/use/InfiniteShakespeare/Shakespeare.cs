@@ -7,7 +7,7 @@ namespace InfiniteShakespeare;
 public static class Shakespeare
 {
     static readonly Lazy<TransformerModel> _transformerInit = new Lazy<TransformerModel>(CreateTransformer);
-    static TransformerModel Model => _transformerInit.Value;
+    public static TransformerModel Model => _transformerInit.Value;
 
     static TransformerModel CreateTransformer()
     {
@@ -20,9 +20,11 @@ public static class Shakespeare
         using var modelStream = assembly.GetManifestResourceStream($"{nameof(InfiniteShakespeare)}.shakespeare.onnx")!;
         var model = new byte[modelStream.Length];
         modelStream.Read(model, 0, model.Length);
-        return TransformerModel.Load(decoder, model);
+        var transformer = TransformerModel.Load(decoder, model);
+        transformer.EmptyIndex = decoder.First(k => k.Value == " ").Key;
+        return transformer;
     }
-    public static IEnumerable<string> Continue(string context) => Model.Continue(context.Select(c => c.ToString()).ToArray());
+    public static IEnumerable<string> Continue(string context) => Model.Continue(context);
     public static IEnumerable<string> Generate() => Continue(string.Empty);
 
 }

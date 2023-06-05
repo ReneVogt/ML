@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                // assuming the .csproj file is at the root of your workspace
+                "${workspaceFolder}/src/use/Transformer.Tests/Transformer.Tests.csproj",
+                // generate full paths for file names
+                "/property:GenerateFullPaths=true",
+                // do not summarize errors or warnings
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

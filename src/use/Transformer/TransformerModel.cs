@@ -1,6 +1,7 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace Transformer;
 
@@ -23,11 +24,10 @@ public sealed class TransformerModel
         SampleSize = _model.InputMetadata[_model.InputNames[0]].Dimensions[1];
     }
 
-    public IEnumerable<string> Generate() => Continue(Array.Empty<string>());
-    public IEnumerable<string> Continue(string[] previousTokens)
+    public IEnumerable<string> Generate() => Continue();
+    public IEnumerable<string> Continue(string previous = "")
     {
-        var context = Enumerable.Repeat(EmptyIndex, Math.Max(SampleSize - previousTokens.Length, 0))
-            .Concat(previousTokens.TakeLast(SampleSize).Select(s => Encoder[s])).ToArray();
+        var context = Encode(previous ?? string.Empty);
 
         var contextTensor = new DenseTensor<long>(new[] { 1, SampleSize });
         for (var i = 0; i < SampleSize; i++)
@@ -61,6 +61,35 @@ public sealed class TransformerModel
         }
     }
 
+    public int[] Encode(string context)
+    {
+        var tokens = new List<int>();
+        var index = 0;
+        var maxLength = Encoder.Keys.Select(k => k.Length).Max();
+        while (index < context.Length)
+        {
+            var length = Math.Min(maxLength, context.Length - index);
+            while (length > 0)
+            {
+                if (Encoder.ContainsKey(context[index..(index + length)]))
+                    break;
+                length--;
+            }
+            if (length == 0)
+            {
+                tokens.Add(EmptyIndex);
+                index++;
+            }
+            else
+            {
+                tokens.Add(Encoder[context[index..(index + length)]]);
+                index += length;
+            }
+        }
+
+        return Enumerable.Repeat(EmptyIndex, Math.Max(0, SampleSize - tokens.Count)).Concat(tokens).ToArray();
+    }
+
     public static TransformerModel Load(string vocublaryPath, string modelPath)
     {
         var model = new InferenceSession(modelPath);
@@ -70,24 +99,3 @@ public sealed class TransformerModel
     }
     public static TransformerModel Load(IDictionary<int, string> decoder, byte[] model) => new TransformerModel(new InferenceSession(model), decoder);
 }
-
-/*
-
-var session = new InferenceSession("model.onnx");
-
-var inputMeta = session.InputMetadata;
-var container = new NamedOnnxValue[inputMeta.Count];
-var tensor = new DenseTensor<float>(new[] { 1, 3, 224, 224 }); // Again, adjust the dimensions accordingly
-
-// Assuming you have preprocessed your input and filled the tensor
-container[0] = NamedOnnxValue.CreateFromTensor<float>(inputMeta.Keys.First(), tensor);
-
-using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(container);
-
-// Process the results
-foreach (var r in results)
-{
-    Console.WriteLine($"{r.Name} with data type {r.AsTensor<float>().ElementType}");
-}
-
- */

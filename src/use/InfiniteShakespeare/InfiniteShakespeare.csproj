@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="shakespeare.onnx" />
-    <EmbeddedResource Include="vocabulary.json" />
+    <EmbeddedResource Include="..\..\dev\shakespeare\shakespeare.onnx" Link="shakespeare.onnx" />
+    <EmbeddedResource Include="..\..\dev\shakespeare\vocabulary.json" Link="vocabulary.json"/>
   </ItemGroup>
 
   <ItemGroup>
