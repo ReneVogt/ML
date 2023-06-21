@@ -28,8 +28,11 @@ class TicTacToe:
         self.player, self.opponent = self.opponent, self.player
 
     @property
-    def state(self):
+    def stateTensor(self):
         return torch.tensor([[1 if c == ' ' else 0, 1 if c == 'X' else 0, 1 if c == 'O' else 0] for c in self.board], dtype = torch.float32).view(-1)
+    @property
+    def state(self):
+        return ''.join(self.board)
 
     def render(self):
         print(f"|{''.join(self.board[0:3])}|")
