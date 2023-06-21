@@ -1,3 +1,5 @@
+import torch
+
 class TicTacToe:
     def __init__(self):
         self.board = [' ']*9
@@ -27,7 +29,7 @@ class TicTacToe:
 
     @property
     def state(self):
-        return ''.join(self.board) #torch.tensor([[1 if c == ' ' else 0, 1 if c == self.player else 0, 1 if c == self.opponent else 0] for c in self.board], dtype = torch.float32).view(-1)
+        return torch.tensor([[1 if c == ' ' else 0, 1 if c == 'X' else 0, 1 if c == 'O' else 0] for c in self.board], dtype = torch.float32).view(-1)
 
     def render(self):
         print(f"|{''.join(self.board[0:3])}|")
