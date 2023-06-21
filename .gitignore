@@ -350,6 +350,6 @@ MigrationBackup/
 .ionide/
 
 #custom
-src/dev/commits/
-src/dev/shakespeare/
+src/dev/transformer/commits/
+src/dev/transformer/shakespeare/
 src/dev/test.ipynb
