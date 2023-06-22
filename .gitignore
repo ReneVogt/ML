@@ -353,3 +353,5 @@ MigrationBackup/
 src/dev/transformer/commits/
 src/dev/transformer/shakespeare/
 src/dev/test.ipynb
+*.nn
+*.onnx
