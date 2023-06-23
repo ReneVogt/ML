@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\dev\shakespeare\shakespeare.onnx" Link="shakespeare.onnx" />
-    <EmbeddedResource Include="..\..\dev\shakespeare\vocabulary.json" Link="vocabulary.json"/>
+    <EmbeddedResource Include="..\..\dev\transformer\shakespeare\shakespeare.onnx" Link="shakespeare.onnx" />
+    <EmbeddedResource Include="..\..\dev\transformer\shakespeare\vocabulary.json" Link="vocabulary.json" />
   </ItemGroup>
 
   <ItemGroup>

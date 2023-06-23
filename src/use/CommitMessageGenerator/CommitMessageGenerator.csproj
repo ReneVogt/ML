@@ -12,11 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\dev\commits\vocabulary.json" Link="vocabulary.json" />
+    <EmbeddedResource Include="..\..\dev\transformer\commits\vocabulary.json" Link="vocabulary.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\dev\commits\commits.onnx" Link="commits.onnx" />
+    <EmbeddedResource Include="..\..\dev\transformer\commits\commits.onnx" Link="commits.onnx" />
   </ItemGroup>
 
   <ItemGroup>

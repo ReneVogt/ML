@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Transformer", "Transformer\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Transformer.Tests", "Transformer.Tests\Transformer.Tests.csproj", "{07179725-A753-46B6-B0C4-5E4D8E434224}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfiniteShakespeare", "InfiniteShakespeare\InfiniteShakespeare.csproj", "{03844C44-E51B-4EB0-A64C-98D046637E9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfiniteShakespeare", "InfiniteShakespeare\InfiniteShakespeare.csproj", "{03844C44-E51B-4EB0-A64C-98D046637E9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommitMessageGenerator", "CommitMessageGenerator\CommitMessageGenerator.csproj", "{B9D31888-F8A9-4CC2-A837-41AFDB0CF579}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommitMessageGenerator", "CommitMessageGenerator\CommitMessageGenerator.csproj", "{B9D31888-F8A9-4CC2-A837-41AFDB0CF579}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Connect4", "Connect4\Connect4.csproj", "{BCD797E6-8C62-479A-BE1D-0BD26B656D8B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{B9D31888-F8A9-4CC2-A837-41AFDB0CF579}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9D31888-F8A9-4CC2-A837-41AFDB0CF579}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9D31888-F8A9-4CC2-A837-41AFDB0CF579}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCD797E6-8C62-479A-BE1D-0BD26B656D8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCD797E6-8C62-479A-BE1D-0BD26B656D8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCD797E6-8C62-479A-BE1D-0BD26B656D8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCD797E6-8C62-479A-BE1D-0BD26B656D8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

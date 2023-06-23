@@ -69,60 +69,6 @@ class Connect4:
             signs = [' ' if x == 0 else 'X' if x == 1 else 'O' for x in signs]
             print(f"|{''.join(signs)}|")
 
-
-@torch.no_grad()
-def validate_full(model : nn.Module, loginterval = None):
-    train = model.training
-    model.eval()
-    
-    def increasegames(results):
-        results['games'] += 1
-        if not loginterval is None and  results['games'] % loginterval == 0:
-            wins = results['wins']
-            losses = results['losses']
-            draws = results['draws']
-            print(f"full validation: {results['games']} games, {100*(wins+draws)/(wins+draws+losses):.2f}%.")
-
-    def validategame(model : nn.Module, env : Connect4, results):
-        for action in [a for a in range(7) if env.is_valid(a)]:
-            env.move(action)
-            if env.winner != 0:
-                results['losses'] += 1
-                increasegames(results)
-            elif env.full:
-                results['draws'] += 1
-                increasegames(results)
-            else:
-                q = model(env.state)
-                qa = max([a for a in range(7) if env.is_valid(a)], key = lambda x: q[x])
-                env.move(qa)
-                if env.winner != 0:
-                    results['wins'] += 1
-                    increasegames(results)
-                elif env.full:
-                    results['draws'] += 1
-                    increasegames(results)
-                else:
-                    validategame(model, env, results)
-                env.undo()
-
-            env.undo()
-
-    env = Connect4()
-    q = model(env.state)
-    qa = max([a for a in range(9) if env.is_valid(a)], key = lambda x: q[x])
-    env.move(qa)
-    crossResults = {'wins': 0, 'losses': 0, 'draws': 0, 'games': 0}
-    validategame(model, env, crossResults)
-    env = Connect4()
-    circleResults = {'wins': 0, 'losses': 0, 'draws': 0, 'games': 0}
-    validategame(model, env, circleResults)
-    
-    if train:
-        model.train()
-
-    return crossResults, circleResults
-
 @torch.no_grad()
 def validate(model : nn.Module, games):
     train = model.training
