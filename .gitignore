@@ -355,3 +355,4 @@ src/dev/transformer/shakespeare/
 src/dev/test.ipynb
 *.nn
 *.onnx
+!src/dev/qlearning/connect4/connect4.nn

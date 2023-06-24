@@ -5,10 +5,21 @@
         "name": "Transformer.Tests",
         "type": "coreclr",
         "request": "launch",
-        "preLaunchTask": "build",
+        "preLaunchTask": "buildtransformer",
         "program": "${workspaceFolder}/src/use/Transformer.Tests/bin/Debug/net7.0/Transformer.Tests.dll",
         "args": [],
         "cwd": "${workspaceFolder}/src/use/Transformer.Tests",
+        "console": "externalTerminal",
+        "stopAtEntry": false
+      },
+      {
+        "name": "Connect4",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "buildconnect4",
+        "program": "${workspaceFolder}/src/use/Connect4/bin/Debug/net7.0/Connect4.dll",
+        "args": [],
+        "cwd": "${workspaceFolder}/src/use/Connect4",
         "console": "externalTerminal",
         "stopAtEntry": false
       },

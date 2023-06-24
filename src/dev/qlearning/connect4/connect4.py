@@ -74,16 +74,19 @@ def validate(model : nn.Module, games):
     train = model.training
     model.eval()
 
-    wins = 0
-    draws = 0
-    losses = 0
+    crosswins = 0
+    crossdraws = 0
+    crosslosses = 0
+    circlewins = 0
+    circledraws = 0
+    circlelosses = 0
 
     for _ in range(games):
         done = False
         qplayer = random.choice([1, 2])
         env = Connect4()
         while not done:
-            if qplayer == env.player:
+            if qplayer == env.player or random.uniform(0, 1) < 0.5:
                 q = model(env.state)
                 action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: q[x])
             else:
@@ -93,15 +96,24 @@ def validate(model : nn.Module, games):
 
             if env.winner != 0:
                 if env.winner == qplayer:
-                    wins += 1
+                    if qplayer == 1:
+                        crosswins += 1
+                    else:
+                        circlewins += 1
                 else:
-                    losses += 1
+                    if qplayer == 1:
+                        crosslosses += 1
+                    else:
+                        circlelosses += 1
                 done = True
             elif env.full:
-                draws += 1
+                if qplayer == 1:
+                    crossdraws += 1
+                else:
+                    circledraws += 1
                 done = True
 
     if train:
         model.train()
 
-    return wins, draws, losses
+    return crosswins, crossdraws, crosslosses, circlewins, circledraws, circlelosses
