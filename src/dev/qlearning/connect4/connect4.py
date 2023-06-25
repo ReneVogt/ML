@@ -80,10 +80,11 @@ def validate(model : nn.Module, games):
     circlewins = 0
     circledraws = 0
     circlelosses = 0
+    qplayer = 2
 
     for _ in range(games):
         done = False
-        qplayer = random.choice([1, 2])
+        qplayer = 3 - qplayer
         env = Connect4()
         while not done:
             if qplayer == env.player or random.uniform(0, 1) < 0.5:
