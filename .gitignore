@@ -355,4 +355,4 @@ src/dev/transformer/shakespeare/
 src/dev/test.ipynb
 *.nn
 *.onnx
-!src/dev/qlearning/connect4/connect4.nn
+!src/dev/policygradient/connect4.nn
