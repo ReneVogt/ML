@@ -352,7 +352,7 @@ MigrationBackup/
 #custom
 src/dev/transformer/commits/
 src/dev/transformer/shakespeare/
-src/dev/test.ipynb
+test.ipynb
 *.nn
 *.onnx
 !src/dev/policygradient/connect4.nn

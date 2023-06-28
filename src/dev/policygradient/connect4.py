@@ -121,7 +121,12 @@ def generateEpisode(model : nn.Module):
 
         action = sample(probs, env)
         
-        env.move(action.item())
+        try:
+            env.move(action.item())
+        except Exception as e:
+            print(f'ERROR: {e}')
+            env.render()
+            print(probs)
 
         if env.winner != 0:
             reward = 1
@@ -144,23 +149,24 @@ def validate(model : nn.Module, games):
     model.eval()
 
     playerNames = {1: 'Red', 2: 'Yellow'}
-    modes = {False: 'p', True: 'd'}
 
-    for player, useMax in  [(1, False), (2, False), (1, True), (2,True)]:
+    for player in  [1, 2]:
         wins = draws = losses = 0
         for _ in range(games):
             env = Connect4()
             while env.winner == 0 and not env.full:
                 if player == env.player:
                     probs = model(env.state)
-                    if useMax:
-                        action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: probs[x])
-                    else:
-                        action = sample(probs, env).item()
+                    action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: probs[x])
                 else:
                     action = random.choice([a for a in range(7) if env.is_valid(a)])
                 
-                env.move(action)
+                try:
+                    env.move(action)
+                except Exception as e:
+                    print(f'ERROR: {e}')
+                    env.render()
+                    print(probs)
 
             if env.winner == player:
                 wins += 1
@@ -168,7 +174,7 @@ def validate(model : nn.Module, games):
                 draws += 1
             else:
                 losses += 1
-        print(f'{playerNames[player]} {modes[useMax]}: {100*wins/games:.2f} {100*draws/games:.2f} {100*losses/games:.2f}')
+        print(f'{playerNames[player]}: {100*wins/games:.2f} {100*draws/games:.2f} {100*losses/games:.2f}')
 
     if train:
         model.train()
