@@ -132,10 +132,10 @@ def generateEpisode(model : nn.Module):
             reward = 1
             done = True
         elif env.full:
-            reward = 0 if env.player == 2 else 0.25
+            reward = 0
             done = True
         else:
-            reward = -0.1 if env.player == 2 else 0
+            reward = -0.1
 
         episode.append((state, action, reward))
     
