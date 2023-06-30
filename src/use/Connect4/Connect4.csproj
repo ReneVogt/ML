@@ -8,7 +8,7 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="..\..\dev\qlearning\connect4\connect4.onnx" Link="connect4.onnx" />
+		<EmbeddedResource Include="..\..\dev\policygradient\connect4.onnx" Link="connect4.onnx" />
 	</ItemGroup>
 
 	<ItemGroup>

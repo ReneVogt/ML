@@ -149,6 +149,7 @@ def validate(model : nn.Module, games):
     model.eval()
 
     playerNames = {1: 'Red', 2: 'Yellow'}
+    probabilities = []
 
     for player in  [1, 2]:
         wins = draws = losses = 0
@@ -158,8 +159,9 @@ def validate(model : nn.Module, games):
                 if player == env.player:
                     probs = model(env.state)
                     action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: probs[x])
+                    probabilities.append(probs[action].item())
                 else:
-                    action = random.choice([a for a in range(7) if env.is_valid(a)])
+                    action = sample(probs, env)
                 
                 try:
                     env.move(action)
@@ -176,5 +178,7 @@ def validate(model : nn.Module, games):
                 losses += 1
         print(f'{playerNames[player]}: {100*wins/games:.2f} {100*draws/games:.2f} {100*losses/games:.2f}')
 
+    probabilities = torch.tensor(probabilities)
+    print(f'Probabilites: {probabilities.mean():.4f} {probabilities.std():.4f}')
     if train:
         model.train()
