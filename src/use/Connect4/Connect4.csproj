@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="..\..\dev\policygradient\connect4.onnx" Link="connect4.onnx" />
+		<EmbeddedResource Include="..\..\dev\connect4\connect4.onnx" Link="connect4.onnx" />
 	</ItemGroup>
 
 	<ItemGroup>
