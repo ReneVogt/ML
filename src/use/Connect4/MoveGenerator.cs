@@ -16,15 +16,16 @@ static class MoveGenerator
         modelStream.Read(model, 0, model.Length);
         _model = new InferenceSession(model);
     }
-    public static int GetMove(List<int>[] state)
+    public static int GetMove(List<int>[] state, int currentPlayer)
     {
+        var opponent = 3- currentPlayer;
         var inputTensor = new DenseTensor<float>([3, 6, 7]);
         for (var col = 0; col < 7; col++)
             for (var row = 0; row < 6; row++)
             {
                 inputTensor[0, row, col] = state[col].Count <= row || state[col][row] == 0 ? 1 : 0;
-                inputTensor[1, row, col] = state[col].Count > row && state[col][row] == 1 ? 1 : 0;
-                inputTensor[2, row, col] = state[col].Count > row && state[col][row] == 2 ? 1 : 0;
+                inputTensor[1, row, col] = state[col].Count > row && state[col][row] == currentPlayer ? 1 : 0;
+                inputTensor[2, row, col] = state[col].Count > row && state[col][row] == opponent ? 1 : 0;
             }
 
         var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(_model.InputNames[0], inputTensor) };

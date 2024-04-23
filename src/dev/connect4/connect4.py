@@ -60,8 +60,13 @@ class Connect4:
         self.full = all(self.heights[i] == 6 for i in range(7))
 
     @property
-    def state(self): 
-        return self.board.clone()
+    def state(self):
+        clone = self.board.clone()
+        if self.player == 1: 
+            return clone
+        clone[1], clone[2] = clone[2].clone(), clone[1].clone()
+        return clone
+        
 
     def render(self):
         for row in reversed(range(6)):

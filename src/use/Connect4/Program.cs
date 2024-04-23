@@ -65,7 +65,7 @@ do
         if (action > 6) goto mainMenu;
     }
     else
-        action = MoveGenerator.GetMove(state);
+        action = MoveGenerator.GetMove(state, player);
 
     if (state[action].Count == 6) continue;
     state[action].Add(player);
