@@ -50,11 +50,12 @@ Console.Clear();
 Write(0, 0, ConsoleColor.Blue, frame);
 Write(0, 13, ConsoleColor.Gray, "  1   2   3   4   5   6   7");
 
-var keys = new List<ConsoleKey>{ ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4, ConsoleKey.D5, ConsoleKey.D6, ConsoleKey.D7, ConsoleKey.Escape };
+var keys = new List<ConsoleKey>{ ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4, ConsoleKey.D5, ConsoleKey.D6, ConsoleKey.D7, ConsoleKey.Backspace, ConsoleKey.Escape };
 var state = Enumerable.Range(0, 7).Select(_ => new List<int>()).ToArray();
 
 var done = false;
 var player = 1;
+var history = new Stack<int>();
 do
 {
     int action;
@@ -62,13 +63,25 @@ do
     {
         var key = GetKey(keys.ToArray());
         action = keys.FindIndex(k => k == key);
-        if (action > 6) goto mainMenu;
+        if (action == 7)
+        {
+            if (history.Count == 0) goto mainMenu;
+            action = history.Pop();
+            Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), ConsoleColor.Black, "   ");
+            state[action].RemoveAt(state[action].Count-1);
+            action = history.Pop();
+            Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), ConsoleColor.Black, "   ");
+            state[action].RemoveAt(state[action].Count-1);
+            continue;
+        }
+        if (action > 7) goto mainMenu;
     }
     else
         action = MoveGenerator.GetMove(state, player);
 
     if (state[action].Count == 6) continue;
     state[action].Add(player);
+    history.Push(action);
 
     Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), player == 1 ? ConsoleColor.Red : ConsoleColor.Yellow, "███");
 
