@@ -74,7 +74,7 @@ class Connect4:
             print(f"|{''.join(signs)}|")
 
 @torch.no_grad()
-def validate(model : nn.Module, games):
+def validate(model : nn.Module, games, alpha = 0):
     train = model.training
     model.eval()
 
@@ -91,8 +91,8 @@ def validate(model : nn.Module, games):
         qplayer = 3 - qplayer
         env = Connect4()
         while not done:
-            if qplayer == env.player:
-                q = model(env.state)
+            if qplayer == env.player or random.uniform(0, 1) < alpha:
+                q = model(env.state).squeeze()
                 action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: q[x])
             else:
                 action = random.choice([a for a in range(7) if env.is_valid(a)])
