@@ -31,6 +31,6 @@ static class MoveGenerator
         var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(_model.InputNames[0], inputTensor) };
         using var results = _model.Run(inputs);
         var result = results.First().AsTensor<float>();
-        return Enumerable.Range(0, 6).Where(a => state[a].Count < 6).MaxBy(a => result[a]);
+        return Enumerable.Range(0, 6).Where(a => state[a].Count < 6).MaxBy(a => result[0, a]);
     }
 }
