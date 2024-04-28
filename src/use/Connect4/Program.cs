@@ -51,114 +51,48 @@ Write(0, 0, ConsoleColor.Blue, frame);
 Write(0, 13, ConsoleColor.Gray, "  1   2   3   4   5   6   7");
 
 var keys = new List<ConsoleKey>{ ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4, ConsoleKey.D5, ConsoleKey.D6, ConsoleKey.D7, ConsoleKey.Backspace, ConsoleKey.Escape };
-var state = Enumerable.Range(0, 7).Select(_ => new List<int>()).ToArray();
 
 var done = false;
-var player = 1;
-var history = new Stack<int>();
+var env = new Connect4Board();
 do
 {
     int action;
-    if (player == 1 && redHuman || player == 2 && yellowHuman)
+    if (env.Player == 1 && redHuman || env.Player == 2 && yellowHuman)
     {
-        var key = GetKey(keys.ToArray());
+        var key = GetKey([.. keys]);
         action = keys.FindIndex(k => k == key);
         if (action == 7)
         {
-            if (history.Count == 0) goto mainMenu;
-            action = history.Pop();
-            Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), ConsoleColor.Black, "   ");
-            state[action].RemoveAt(state[action].Count-1);
-            action = history.Pop();
-            Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), ConsoleColor.Black, "   ");
-            state[action].RemoveAt(state[action].Count-1);
+            if (!env.CanUndo) goto mainMenu;
+            action = env.Undo();
+            Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)+1), ConsoleColor.Black, "   ");            
+            action = env.Undo();
+            Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)+1), ConsoleColor.Black, "   ");
             continue;
         }
         if (action > 7) goto mainMenu;
     }
     else
-        action = MoveGenerator.GetMove(state, player);
+        action = MoveGenerator.GetMove(env);
 
-    if (state[action].Count == 6) continue;
-    state[action].Add(player);
-    history.Push(action);
+    if (env.Height(action) == 6) continue;
+    env.Move(action);
 
-    Write(1 + 4 * action, 1 + 2 * (6 - state[action].Count), player == 1 ? ConsoleColor.Red : ConsoleColor.Yellow, "███");
+    Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)), env.Player == 2 ? ConsoleColor.Red : ConsoleColor.Yellow, "███");
 
-    var won = false;
-
-    // horizontal check
-    var row = state[action].Count - 1;
-    for (int x = Math.Max(0, action - 3); x <= Math.Min(3, action); x++)
-        if (state[x].Count > row && state[x][row] == player &&
-            state[x+1].Count > row && state[x+1][row] == player &&
-            state[x+2].Count > row && state[x+2][row] == player &&
-            state[x+3].Count > row && state[x+3][row] == player)
-        {
-            won = true;
-            break;
-        }
-
-    // vertical check
-    if (!won && state[action].Count > 3 && state[action][2] == player && state[action][3] == player)
-    {
-        if (state[action][1] == player)
-        {
-            if (state[action][0] == player || state[action].Count > 4 && state[action][4] == player)
-                won = true;
-        }
-        else if (state[action].Count > 5 && state[action][4] == player && state[action][5] == player)
-            won = true;
-    }
-
-    // diagonal
-    if (!won)
-    {
-        var consec1 = 0;
-        var consec2 = 0;
-        for (var i = -3; i < 4; i++)
-        {
-            var x = action + i;
-            var y = row + i;
-            if (x >= 0 && x < 7 && y >= 0 && y < state[x].Count && state[x][y] == player)
-                consec1++;
-            else
-                consec1 = 0;
-            if (consec1 == 4)
-            {
-                won = true;
-                break;
-            }
-
-            x = action + i;
-            y = row - i;
-            if (x >= 0 && x < 7 && y >= 0 && y < state[x].Count && state[x][y] == player)
-                consec2++;
-            else
-                consec2 = 0;
-            if (consec2 == 4)
-            {
-                won = true;
-                break;
-            }
-        }
-    }
-
-    if (won)
+    if (env.Winner != 0)
     {
         done = true;
-        if (player == 1)
+        if (env.Winner == 1)
             Write(10, 15, ConsoleColor.Red, "RED WINS!");
         else
             Write(9, 15, ConsoleColor.Yellow, "YELLOW WINS!");
     }
-    else if (state.All(l => l.Count == 6))
+    else if (env.Full)
     {
         done = true;
         Write(12, 15, ConsoleColor.Green, "DRAW!");
     }
-
-    player = 3 - player;
 
 } while (!done);
 
