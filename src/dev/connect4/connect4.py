@@ -74,7 +74,21 @@ class Connect4:
             print(f"|{''.join(signs)}|")
 
 @torch.no_grad()
-def validate(model : nn.Module, games, alpha = 0):
+def getsampledmove(q, validmoves, epsilon):
+    if len(validmoves) == 1:
+        return validmoves[0]
+    elif random.uniform(0,1) < epsilon:
+        return random.choice(validmoves)
+    
+    validqs = torch.tensor([q[a] for a in validmoves])
+    mean = validqs.mean()
+    std = validqs.std() + 1e-8
+    normalizedqs = (validqs - mean) / std
+    probs = F.softmax(normalizedqs, dim=0)
+    return validmoves[torch.multinomial(probs, num_samples=1)]
+
+@torch.no_grad()
+def validate(model : nn.Module, games, epsilon = 0):
     train = model.training
     model.eval()
 
@@ -85,19 +99,24 @@ def validate(model : nn.Module, games, alpha = 0):
     circledraws = 0
     circlelosses = 0
     qplayer = 2
+    crossGames = set()
+    circleGames = set()
 
     for _ in range(games):
         done = False
         qplayer = 3 - qplayer
         env = Connect4()
+        actions = []
         while not done:
-            if qplayer == env.player or random.uniform(0, 1) < alpha:
-                q = model(env.state).squeeze()
-                action = max([a for a in range(7) if env.is_valid(a)], key = lambda x: q[x])
+            q = model(env.state).squeeze()
+            validmoves = [a for a in range(7) if env.is_valid(a)]
+            if qplayer == env.player:
+                action = max(validmoves, key = lambda x: q[x])
             else:
-                action = random.choice([a for a in range(7) if env.is_valid(a)])
+                action = getsampledmove(q, validmoves, epsilon)
 
             env.move(action)
+            actions.append(action)
 
             if env.winner != 0:
                 if env.winner == qplayer:
@@ -117,8 +136,14 @@ def validate(model : nn.Module, games, alpha = 0):
                 else:
                     circledraws += 1
                 done = True
+        
+        gameKey = ''.join(str(a) for a in actions)
+        if qplayer == 1:
+            crossGames.add(gameKey)
+        else:
+            circleGames.add(gameKey)
 
     if train:
         model.train()
 
-    return crosswins, crossdraws, crosslosses, circlewins, circledraws, circlelosses
+    return crosswins, crossdraws, crosslosses, 2*len(crossGames)/games, circlewins, circledraws, circlelosses, 2*len(circleGames)/games
