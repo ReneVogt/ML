@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using Connect4;
 
 Console.CursorVisible = false;
@@ -76,9 +77,10 @@ do
         {
             if (!env.CanUndo) goto mainMenu;
             action = env.Undo();
-            Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)+1), ConsoleColor.Black, "   ");            
+            WriteStone(action, env.Height(action), ConsoleColor.Black);
+            if (redHuman && yellowHuman) continue;
             action = env.Undo();
-            Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)+1), ConsoleColor.Black, "   ");
+            WriteStone(action, env.Height(action), ConsoleColor.Black);
             continue;
         }
         if (action > 7) goto mainMenu;
@@ -89,7 +91,7 @@ do
     if (env.Height(action) == 6) continue;
     env.Move(action);
 
-    Write(1 + 4 * action, 1 + 2 * (6 - env.Height(action)), env.Player == 2 ? ConsoleColor.Red : ConsoleColor.Yellow, "███");
+    WriteStone(action, env.Height(action) - 1, env.Player == 2 ? ConsoleColor.Red : ConsoleColor.Yellow);
 
     if (env.Winner != 0)
     {
@@ -120,6 +122,7 @@ static ConsoleKey GetKey(params ConsoleKey[] allowed)
     return key;
 }
 
+static void WriteStone(int column, int row, ConsoleColor color) => Write(1 + 4 * column, 2 * (6 - row) - 1, color, "███");
 static void Write(int x, int y, ConsoleColor color, string text)
 {
     Console.SetCursorPosition(x, y);
