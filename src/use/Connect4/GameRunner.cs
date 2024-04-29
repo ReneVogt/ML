@@ -2,8 +2,7 @@
 
 namespace Connect4;
 
-
-sealed class GameRunner(bool redHuman, bool yellowHuman)
+sealed class GameRunner(IGenerateMoves redMoveGenerator, IGenerateMoves yellowMoveGenerator)
 {
     const string Frame = @"
 ╔═══╤═══╤═══╤═══╤═══╤═══╤═══╗
@@ -20,7 +19,6 @@ sealed class GameRunner(bool redHuman, bool yellowHuman)
 ║   │   │   │   │   │   │   ║
 ╚═══╧═══╧═══╧═══╧═══╧═══╧═══╝
 ";
-    static readonly List<ConsoleKey> allowedKeys = new List<ConsoleKey> { ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.D3, ConsoleKey.D4, ConsoleKey.D5, ConsoleKey.D6, ConsoleKey.D7, ConsoleKey.Backspace, ConsoleKey.Escape };
 
     readonly Connect4Board env = new();
 
@@ -32,21 +30,14 @@ sealed class GameRunner(bool redHuman, bool yellowHuman)
 
         for(; ; )
         {
-            int action;
-            if (env.Player == 1 && redHuman || env.Player == 2 && yellowHuman)
+            int action = env.Player == 1 ? redMoveGenerator.GetMove(env) : yellowMoveGenerator.GetMove(env);
+            if (action == 7)
             {
-                var key = GetKey([.. allowedKeys]);
-                action = allowedKeys.FindIndex(k => k == key);
-                if (action == 7)
-                {
-                    if (!env.CanUndo) return;
-                    Undo();
-                    continue;
-                }
-                if (action > 7) return;
+                if (!env.CanUndo) return;
+                Undo();
+                continue;
             }
-            else
-                action = MoveGenerator.GetMove(env);
+            if (action > 7) return;
 
             if (env.Height(action) == 6) continue;
             env.Move(action);
@@ -66,7 +57,7 @@ sealed class GameRunner(bool redHuman, bool yellowHuman)
                 Write(12, 15, ConsoleColor.Green, "DRAW!");
 
             var k = GetKey([ConsoleKey.Escape, ConsoleKey.Backspace]);
-            if (k == ConsoleKey.Escape) return;
+            if (k == 0) return;
             Undo();
             Write(9, 15, ConsoleColor.Black, "            ");
         }
@@ -76,7 +67,7 @@ sealed class GameRunner(bool redHuman, bool yellowHuman)
     {
         var action = env.Undo();
         WriteStone(action, env.Height(action), ConsoleColor.Black);
-        if (redHuman && yellowHuman) return;
+        if (redMoveGenerator.IsHuman && yellowMoveGenerator.IsHuman) return;
         action = env.Undo();
         WriteStone(action, env.Height(action), ConsoleColor.Black);
     }

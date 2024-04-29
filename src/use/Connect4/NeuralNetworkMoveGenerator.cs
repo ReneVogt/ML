@@ -4,19 +4,22 @@ using System.Reflection;
 
 namespace Connect4;
 
-static class MoveGenerator
+sealed class NeuralNetworkMoveGenerator : IGenerateMoves
 {
-    static readonly InferenceSession _model;
+    static readonly InferenceSession inferenceSession;
 
-    static MoveGenerator()
+    public bool IsHuman => false;
+
+    static NeuralNetworkMoveGenerator()
     {
         var assembly = Assembly.GetExecutingAssembly();
         using var modelStream = assembly.GetManifestResourceStream($"{nameof(Connect4)}.connect4.onnx")!;
         var model = new byte[modelStream.Length];
         modelStream.Read(model, 0, model.Length);
-        _model = new InferenceSession(model);
+        inferenceSession = new InferenceSession(model);
     }
-    public static int GetMove(Connect4Board env)
+
+    public int GetMove(Connect4Board env)
     {
         var inputTensor = new DenseTensor<float>([3, 6, 7]);
         for (var col = 0; col < 7; col++)
@@ -27,9 +30,12 @@ static class MoveGenerator
                 inputTensor[2, row, col] = env[col, row] == env.Opponent ? 1 : 0;
             }
 
-        var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(_model.InputNames[0], inputTensor) };
-        using var results = _model.Run(inputs);
-        var result = results.First().AsTensor<float>();
-        return Enumerable.Range(0, 6).Where(a => env.Height(a) < 6).MaxBy(a => result[0, a]);
+        lock (inferenceSession)
+        {
+            var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(inferenceSession.InputNames[0], inputTensor) };
+            using var results = inferenceSession.Run(inputs);
+            var result = results.First().AsTensor<float>();
+            return Enumerable.Range(0, 6).Where(a => env.Height(a) < 6).MaxBy(a => result[0, a]);
+        }
     }
 }

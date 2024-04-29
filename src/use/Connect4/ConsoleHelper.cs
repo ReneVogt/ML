@@ -2,14 +2,15 @@
 
 static class ConsoleHelper
 {   
-    public static ConsoleKey GetKey(params ConsoleKey[] allowed)
+    public static int GetKey(params ConsoleKey[] allowed)
     {
+        var allowedKeys = allowed.ToList();
         ConsoleKey key;
         do
         {
             key = Console.ReadKey(true).Key;
-        } while (!allowed.Contains(key));
-        return key;
+        } while (!allowedKeys.Contains(key));
+        return allowedKeys.IndexOf(key);
     }
     public static void Write(int x, int y, ConsoleColor color, string text)
     {
