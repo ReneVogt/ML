@@ -8,13 +8,10 @@ from connect4 import Connect4Board
 from helpers import log
 
 def createStateTensor(board : Connect4Board) -> torch.Tensor:
-    state = torch.zeros(3, 6, 7, dtype=torch.float32)
-    for row in range(6):
-        for column in range(7):
-            player = board[column, row]
-            index = 0 if player == 0 else 1 if player == board.Player else 2
-            state[index, row, column] = 1.
-    return torch.stack([state])
+    state = torch.tensor(board._board, dtype=torch.float32).transpose(0, 1)
+    if board.Player == Connect4Board.PLAYER2:
+        state = -state
+    return torch.stack([torch.stack([state])])
 
 @torch.no_grad()
 def sampleMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : float) -> int:
