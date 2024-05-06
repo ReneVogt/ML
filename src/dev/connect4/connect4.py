@@ -1,149 +1,177 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import random
+class Connect4BoardError(Exception):
+    """
+    Base class for errors raised by the
+    Connect4Board class
+    """
+    def __init__(self, message) -> None:
+        super().__init__(message)
 
-class Connect4:   
-    def __init__(self):
-        self.board = torch.zeros(3, 6, 7, dtype = torch.float32)
-        self.board[0, :, :] = 1
-        self.heights = [0, 0, 0, 0, 0, 0, 0]
-        self.player = 1
-        self.opponent = 2
-        self.winner = 0
-        self.full = False
-        self.history = []
+class GameFinishedError(Connect4BoardError):
+    """
+    Error raised by the Connect4Board class
+    when move() is called after a game already
+    finished.
+    """
+    def __init__(self) -> None:
+        super().__init__("The game was already finished.")
+class ColumnFullError(Connect4BoardError):
+    """
+    Error raised by the Connect4Board class
+    when move() is called for a column that is
+    already full.
+    """
+    def __init__(self, column : int) -> None:
+        super().__init__(f'Column {column} is already full.')
 
-    def is_valid(self, action):
-        return action >= 0 and action < 7 and self.heights[action] < 6
-    def charAt(self, col, row):
-        return ' ' if row < 0 or row > 5 or col < 0 or col > 6 or self.board[0, row, col] == 1 else 'X' if self.board[1, row, col] == 1 else 'O'
     
-    def setAt(self, col):
-        row = self.heights[col]
-        self.board[0, row, col] = 0
-        self.board[self.player, row, col] = 1
-        self.heights[col] += 1
-
-    def move(self, action):
-        if not self.is_valid(action):
-            raise ValueError(f'Column {action} is already filled.')
-        if self.winner != 0:
-            raise ValueError(f'Game is already finished.')
-
-        self.setAt(action)
-
-        row = self.heights[action] - 1
-        pattern = ''.join(['X' if self.player == 1 else 'O'] * 4)
-
-        # check horizontal win
-        if pattern in ''.join([self.charAt(col, row) for col in range(7)]):
-            self.winner = self.player
-        # check vertical win
-        elif pattern in ''.join(self.charAt(action, r) for r in range(self.heights[action])):
-            self.winner = self.player
-        else:
-            # check diagonal win ll to ur
-            indices = [(action + (x - 4), row + (x - 4)) for x in range(7)]
-            diagonal = ''.join([self.charAt(col, row) for col, row in indices])
-            if pattern in diagonal:
-                self.winner = self.player
-            else:
-                # check diagonal win ul to lr
-                indices = [(action + (x - 3), row - (x - 3)) for x in range(7)]
-                diagonal = ''.join([self.charAt(col, row) for col, row in indices])
-                if pattern in diagonal:
-                    self.winner = self.player
-
-        self.player, self.opponent = self.opponent, self.player
-        self.history.append(action)
-        self.full = all(self.heights[i] == 6 for i in range(7))
+class Connect4Board:
+    PLAYER1 = 1
+    PLAYER2 = 2
+    EMPTY = 0
 
     @property
-    def state(self):
-        clone = self.board.clone()
-        if self.player == 1: 
-            return clone
-        clone[1], clone[2] = clone[2].clone(), clone[1].clone()
-        return clone
+    def Player(self) -> int:
+        return self._player
+    @property
+    def ValidMoves(self) -> list[int]:
+        return self._validmoves
+    @property
+    def Winner(self) -> int:
+        return self._winner
+    @property
+    def Full(self) -> bool:
+        return len(self._validmoves) == 0
+    @property
+    def Finished(self) -> bool:
+        return self.Full or self.Winner != Connect4Board.EMPTY
+    @property
+    def gameKey(self) -> str:
+        return ''.join(str(action) for action in self._history)
+
+    def __init__(self) -> None:
+        self._player = Connect4Board.PLAYER1        
+        self._winner = Connect4Board.EMPTY
+        self._history = []
+        self._board = [[Connect4Board.EMPTY for _ in range(6)] for _ in range(7)]
+        self._heights = [0, 0, 0, 0, 0, 0, 0]
+        self._validmoves = [0, 1, 2, 3, 4, 5, 6]
+
+    def __getitem__(self, position : tuple[int, int]) -> int:
+        """
+        Returns the player at the given position.
+
+        Parameters:
+        position (tuple[int,int]): The board column (zero-indexed, 0 left, 6 right) and row (zero-indexed, 0 bottom, 5 top) to look at.
+
+        Returns:
+        int: The player index at the given position (EMPTY, PLAYER1 or PLAYER2)
+        """
+        if not isinstance(position, tuple) or len(position) != 2:
+            raise ValueError("Index must be a tuple of two integers.")
+        column, row = position
+        return self._board[column][row]
+
+    def move(self, action) -> None:
+        if self.Finished:
+            raise GameFinishedError()
+        if action < 0 or action > 6:
+            raise IndexError("The action index must be greater than or equal to zero and less than 7.")
         
+        row = self._heights[action]
+        if row >= 6:
+            raise ColumnFullError(action)
+        
+        self._board[action][row] = self._player
+        self._heights[action] = row + 1
+        if row == 5:
+            self._validmoves.remove(action)
 
-    def render(self):
-        for row in reversed(range(6)):
-            signs = [self.charAt(col, row) for col in range(7)]
-            print(f"|{''.join(signs)}|")
+        self._winner = self._getWinner(action, row, self._player)
+        self._history.append(action)
+        self._player = Connect4Board.PLAYER2 if self._player == Connect4Board.PLAYER1 else Connect4Board.PLAYER1
 
-@torch.no_grad()
-def getsampledmove(q, validmoves, epsilon):
-    if len(validmoves) == 1:
-        return validmoves[0]
-    elif random.uniform(0,1) < epsilon:
-        return random.choice(validmoves)
+    def _playerAt(self, column, row) -> int:
+        if column < 0 or column > 6:
+            return Connect4Board.EMPTY
+        if row < 0 or row >= self._heights[column]:
+            return Connect4Board.EMPTY
+        return self._board[column][row]
     
-    validqs = torch.tensor([q[a] for a in validmoves])
-    mean = validqs.mean()
-    std = validqs.std() + 1e-8
-    normalizedqs = (validqs - mean) / std
-    probs = F.softmax(normalizedqs, dim=0)
-    return validmoves[torch.multinomial(probs, num_samples=1)]
+    def _getWinner(self, column, row, player) -> int:
+        # horizontal line
+        line = 0
+        if self._playerAt(column-1, row) == player:
+            line += 1
+            if self._playerAt(column-2, row) == player:
+                line += 1
+                if self._playerAt(column-3, row) == player:
+                    return player
+        if self._playerAt(column+1, row) == player:
+            line += 1
+            if line == 3:
+                return player
+            if self._playerAt(column+2, row) == player:
+                line += 1
+                if line == 3:
+                    return player
+                if self._playerAt(column+3, row) == player:
+                    return player
+                
+        # vertical line
+        line = 0
+        if self._playerAt(column, row-1) == player:
+            line += 1
+            if self._playerAt(column, row-2) == player:
+                line += 1
+                if self._playerAt(column, row-3) == player:
+                    return player
+        if self._playerAt(column, row+1) == player:
+            line += 1
+            if line == 3:
+                return player
+            if self._playerAt(column, row+2) == player:
+                line += 1
+                if line == 3:
+                    return player
+                if self._playerAt(column, row+3) == player:
+                    return player
+                
+        # diagonal line (ul to lr)
+        line = 0
+        if self._playerAt(column-1, row+1) == player:
+            line += 1
+            if self._playerAt(column-2, row+2) == player:
+                line += 1
+                if self._playerAt(column-3, row+3) == player:
+                    return player
+        if self._playerAt(column+1, row-1) == player:
+            line += 1
+            if line == 3:
+                return player
+            if self._playerAt(column+2, row-2) == player:
+                line += 1
+                if line == 3:
+                    return player
+                if self._playerAt(column+3, row-3) == player:
+                    return player
 
-@torch.no_grad()
-def validate(model : nn.Module, games, epsilon = 0):
-    train = model.training
-    model.eval()
+        # diagonal line (ur to ll)
+        line = 0
+        if self._playerAt(column+1, row+1) == player:
+            line += 1
+            if self._playerAt(column+2, row+2) == player:
+                line += 1
+                if self._playerAt(column+3, row+3) == player:
+                    return player
+        if self._playerAt(column-1, row-1) == player:
+            line += 1
+            if line == 3:
+                return player
+            if self._playerAt(column-2, row-2) == player:
+                line += 1
+                if line == 3:
+                    return player
+                if self._playerAt(column-3, row-3) == player:
+                    return player
 
-    crosswins = 0
-    crossdraws = 0
-    crosslosses = 0
-    circlewins = 0
-    circledraws = 0
-    circlelosses = 0
-    qplayer = 2
-    crossGames = set()
-    circleGames = set()
-
-    for _ in range(games):
-        done = False
-        qplayer = 3 - qplayer
-        env = Connect4()
-        actions = []
-        while not done:
-            q = model(env.state).squeeze()
-            validmoves = [a for a in range(7) if env.is_valid(a)]
-            if qplayer == env.player:
-                action = max(validmoves, key = lambda x: q[x])
-            else:
-                action = getsampledmove(q, validmoves, epsilon)
-
-            env.move(action)
-            actions.append(action)
-
-            if env.winner != 0:
-                if env.winner == qplayer:
-                    if qplayer == 1:
-                        crosswins += 1
-                    else:
-                        circlewins += 1
-                else:
-                    if qplayer == 1:
-                        crosslosses += 1
-                    else:
-                        circlelosses += 1
-                done = True
-            elif env.full:
-                if qplayer == 1:
-                    crossdraws += 1
-                else:
-                    circledraws += 1
-                done = True
-        
-        gameKey = ''.join(str(a) for a in actions)
-        if qplayer == 1:
-            crossGames.add(gameKey)
-        else:
-            circleGames.add(gameKey)
-
-    if train:
-        model.train()
-
-    return crosswins, crossdraws, crosslosses, 2*len(crossGames)/games, circlewins, circledraws, circlelosses, 2*len(circleGames)/games
+        return Connect4Board.EMPTY
