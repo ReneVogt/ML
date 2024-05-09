@@ -13,8 +13,6 @@ def log(message):
 
 def createStateTensor(board : Connect4Board) -> torch.Tensor:
     state = torch.tensor(board._board, dtype=torch.float32).transpose(0, 1)
-    padding = torch.zeros(1, 7)
-    state = torch.cat((state, padding))
     if board.Player == Connect4Board.PLAYER2:
         state = -state
     return torch.stack([torch.stack([state])])
@@ -185,25 +183,34 @@ def train(model : nn.Module, optimizer : torch.optim.Optimizer, numberOfGames : 
             q = model(createStateTensor(env)).squeeze()
             action = getTrainingMove(q, env.ValidMoves, epsilon)
             
-            stack.append((q, env.ValidMoves.copy(), action, q.clone().detach()))
+            validMoves = env.ValidMoves.copy()
             env.move(action)
+            reward = 0
+            if env.Winner != 0:
+                reward = 1 # winning reward
+            elif env.Full:
+                if env.Player == Connect4Board.PLAYER1:
+                    reward = 0.5 # draw reward for player 2
+            elif env.Player == Connect4Board.PLAYER2:
+                reward = -0.1 # penalty for longer games for player 1                
+
+            stack.append((q, validMoves, action, q.clone().detach(), reward))
             actions.append(action)
 
         gameKey = env.gameKey
         gameKeys.add(gameKey)
         allGameKeys.add(gameKey)    
 
-        (_, nextvalidmoves, action, next_q) = stack[-1]
-        next_q[action] = 1 if env.Winner != Connect4Board.EMPTY else 0
-
-        for (_, validmoves, action, targetq) in reversed(stack[:-1]):                
+        (_, nextvalidmoves, action, next_q, reward) = stack[-1]
+        next_q[action] = reward
+        for (_, validmoves, action, targetq, reward) in reversed(stack[:-1]):   
             next_max = -max([next_q[a] for a in nextvalidmoves]).item()
-            targetq[action] = -0.1 + gamma * next_max
+            targetq[action] = reward + gamma * next_max
             next_q = targetq
             nextvalidmoves = validmoves
         
-        qs = torch.stack([q for (q, _, _, _) in stack])
-        targets = torch.stack([target for (_ , _, _, target) in stack])
+        qs = torch.stack([q for (q, _, _, _, _) in stack])
+        targets = torch.stack([target for (_ , _, _, target, _) in stack])
         loss = F.mse_loss(qs, targets)
         losses.append(loss.item())
         validationLosses.append(loss.item())

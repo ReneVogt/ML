@@ -118,14 +118,14 @@ class TestTraining_MoveSamplingInternal(unittest.TestCase):
 
 class TestTraining_StateTennor(unittest.TestCase):
     def test_EmptyBoard_ZeroTensor(self):
-        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
         board = Connect4Board()
         result = training.createStateTensor(board)
         self.assertTrue(torch.equal(result, expectedTensor))
 
     def test_UsedBoard_Player1(self):
         board = Connect4Board()
-        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
 
         board.move(0)
         expectedTensor[0, 0, 0, 0] = -1 
@@ -144,7 +144,7 @@ class TestTraining_StateTennor(unittest.TestCase):
 
     def test_UsedBoard_Player2(self):
         board = Connect4Board()
-        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
 
         board.move(0)
         expectedTensor[0, 0, 0, 0] = 1 
