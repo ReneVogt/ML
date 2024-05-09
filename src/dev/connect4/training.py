@@ -27,10 +27,11 @@ def getTrainingMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : fl
         return random.choice(validMoves)
     
     validqs = torch.tensor([qvalues[a] for a in validMoves])
-    mean = validqs.mean()
-    std = validqs.std() + 1e-8
-    normalizedqs = (validqs - mean) / std
-    probs = F.softmax(normalizedqs, dim=0)
+    # mean = validqs.mean()
+    # std = validqs.std() + 1e-8
+    # normalizedqs = (validqs - mean) / std
+    # probs = F.softmax(normalizedqs, dim=0)
+    probs = F.softmax(validqs, dim=0)
     return validMoves[torch.multinomial(probs, num_samples=1)]
 
 @torch.no_grad()
@@ -43,14 +44,15 @@ def getValidationOpponentMove(model : nn.Module, board : Connect4Board, epsilon 
     state = createStateTensor(board)    
     qvalues = model(state).squeeze()
     validqs = torch.tensor([qvalues[a] for a in board.ValidMoves])
-    mean = validqs.mean()
-    std = validqs.std() + 1e-8
-    normalizedqs = (validqs - mean) / std
-    probs = F.softmax(normalizedqs, dim=0)
+    # mean = validqs.mean()
+    # std = validqs.std() + 1e-8
+    # normalizedqs = (validqs - mean) / std
+    # probs = F.softmax(normalizedqs, dim=0)
+    probs = F.softmax(validqs, dim=0)
     return board.ValidMoves[torch.multinomial(probs, num_samples=1)]
 
 @torch.no_grad()
-def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float, qlist : list[int]) -> Connect4Board:
+def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float, qlist : list[int], maxqlist : list[int]) -> Connect4Board:
     board = Connect4Board()
     while not board.Finished:
         if qplayer == board.Player:            
@@ -59,6 +61,7 @@ def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float, qlist
             for q in qvalues:
                 qlist.append(q.item())
             action = max(board.ValidMoves, key = lambda x: qvalues[x])
+            maxqlist.append(qvalues[action].item())
         else:
             action = getValidationOpponentMove(model, board, epsilon)
         board.move(action)
@@ -71,11 +74,12 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
     model.eval()
 
     qvalues = []
+    maxqvalues = []
 
     wins = losses = draws = 0
     games = set()    
     for _ in range(gamesPerPlayer):
-        board = _playValidationGame(model, Connect4Board.PLAYER1, epsilon, qvalues)
+        board = _playValidationGame(model, Connect4Board.PLAYER1, epsilon, qvalues, maxqvalues)
         gk = board.gameKey
         games.add(gk)
         if board.Winner == Connect4Board.PLAYER1:
@@ -86,11 +90,23 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
             draws += 1
 
     log(f'Player 1: {wins} won, {losses} lost, {draws} draws -> {100*wins/gamesPerPlayer:.2f}%, div: {100*len(games)/gamesPerPlayer:.2f}%')
+    sns.histplot(qvalues, kde=True)
+    plt.title('Distribution of Q-values')
+    plt.xlabel('Q-values')
+    plt.ylabel('Frequency')
+    plt.show()
+    qvalues = []
+    sns.histplot(maxqvalues, kde=True)
+    plt.title('Distribution of Max-Q-values')
+    plt.xlabel('Q-values')
+    plt.ylabel('Frequency')
+    plt.show()
+    maxqvalues = []
 
     wins = losses = draws = 0
     games = set()
     for _ in range(gamesPerPlayer):
-        board = _playValidationGame(model, Connect4Board.PLAYER2, epsilon, qvalues)
+        board = _playValidationGame(model, Connect4Board.PLAYER2, epsilon, qvalues, maxqvalues)
         gk = board.gameKey
         games.add(gk)
         if board.Winner == Connect4Board.PLAYER2:
@@ -104,6 +120,11 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
     
     sns.histplot(qvalues, kde=True)
     plt.title('Distribution of Q-values')
+    plt.xlabel('Q-values')
+    plt.ylabel('Frequency')
+    plt.show()
+    sns.histplot(maxqvalues, kde=True)
+    plt.title('Distribution of Max-Q-values')
     plt.xlabel('Q-values')
     plt.ylabel('Frequency')
     plt.show()
