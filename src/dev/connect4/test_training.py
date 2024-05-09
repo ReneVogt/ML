@@ -21,13 +21,13 @@ class TestTraining_MoveSampling(unittest.TestCase):
     def test_SingleValidMove_EpsilonZero(self):
         validMoves = [3]
         qvalues = torch.ones(7, dtype=torch.float32)
-        result = training.sampleMove(qvalues, validMoves, 0)
+        result = training.getTrainingMove(qvalues, validMoves, 0)
         self.assertEqual(result, 3)
 
     def test_SingleValidMove_EpsilonOne(self):
         validMoves = [3]
         qvalues = torch.ones(7, dtype=torch.float32)
-        result = training.sampleMove(qvalues, validMoves, 1)
+        result = training.getTrainingMove(qvalues, validMoves, 1)
         self.assertEqual(result, 3)
 
     def test_TakingRandomMove(self):
@@ -40,7 +40,7 @@ class TestTraining_MoveSampling(unittest.TestCase):
         # and random.choice afterwards returns the middle element
         random.seed(0)
         torch.manual_seed(0)
-        result = training.sampleMove(qvalues, validMoves, 0.84443)
+        result = training.getTrainingMove(qvalues, validMoves, 0.84443)
         self.assertEqual(result, 5)
 
     def test_TakingSampledMove(self):
@@ -52,7 +52,7 @@ class TestTraining_MoveSampling(unittest.TestCase):
         # and multinomial afterwards returns the 5
         random.seed(0)
         torch.manual_seed(0)
-        result = training.sampleMove(qvalues, validMoves, 0.843)
+        result = training.getTrainingMove(qvalues, validMoves, 0.843)
         self.assertEqual(result, 5)
 
 class TestTraining_MoveSamplingInternal(unittest.TestCase):
@@ -65,7 +65,7 @@ class TestTraining_MoveSamplingInternal(unittest.TestCase):
             board.move(action)
         self.assertEqual(board.ValidMoves, [6])
 
-        result = training._sampleMove(None, board, 0)
+        result = training.getValidationOpponentMove(None, board, 0)
         self.assertEqual(result, 6)
 
     def test_SingleValidMove_EpsilonOne(self):
@@ -78,7 +78,7 @@ class TestTraining_MoveSamplingInternal(unittest.TestCase):
 
         self.assertEqual(board.ValidMoves, [6])
 
-        result = training._sampleMove(None, board, 1)
+        result = training.getValidationOpponentMove(None, board, 1)
         self.assertEqual(result, 6)
 
     def test_TakingRandomMove(self):
@@ -94,7 +94,7 @@ class TestTraining_MoveSamplingInternal(unittest.TestCase):
         # and random.choice afterwards returns the middle element
         random.seed(0)
         torch.manual_seed(0)
-        result = training._sampleMove(None, board, 0.84443)
+        result = training.getValidationOpponentMove(None, board, 0.84443)
         self.assertEqual(result, 5)
 
     def test_TakingSampledMove(self):
@@ -113,19 +113,19 @@ class TestTraining_MoveSamplingInternal(unittest.TestCase):
         # and multinomial afterwards returns the 5
         random.seed(0)
         torch.manual_seed(0)
-        result = training._sampleMove(model, board, 0.843)
+        result = training.getValidationOpponentMove(model, board, 0.843)
         self.assertEqual(result, 5)
 
 class TestTraining_StateTennor(unittest.TestCase):
     def test_EmptyBoard_ZeroTensor(self):
-        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
         board = Connect4Board()
         result = training.createStateTensor(board)
         self.assertTrue(torch.equal(result, expectedTensor))
 
     def test_UsedBoard_Player1(self):
         board = Connect4Board()
-        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
 
         board.move(0)
         expectedTensor[0, 0, 0, 0] = -1 
@@ -144,7 +144,7 @@ class TestTraining_StateTennor(unittest.TestCase):
 
     def test_UsedBoard_Player2(self):
         board = Connect4Board()
-        expectedTensor = torch.zeros(1, 1, 6, 7, dtype=torch.float32)
+        expectedTensor = torch.zeros(1, 1, 7, 7, dtype=torch.float32)
 
         board.move(0)
         expectedTensor[0, 0, 0, 0] = 1 

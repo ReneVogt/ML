@@ -5,16 +5,20 @@ import torch.nn.functional as F
 import torch.optim
 import random
 from connect4 import Connect4Board
-from helpers import log
+
+def log(message):
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
 
 def createStateTensor(board : Connect4Board) -> torch.Tensor:
     state = torch.tensor(board._board, dtype=torch.float32).transpose(0, 1)
+    padding = torch.zeros(1, 7)
+    state = torch.cat((state, padding))
     if board.Player == Connect4Board.PLAYER2:
         state = -state
     return torch.stack([torch.stack([state])])
 
 @torch.no_grad()
-def sampleMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : float) -> int:
+def getTrainingMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : float) -> int:
     if len(validMoves) == 1:
         return validMoves[0]
     elif random.uniform(0,1) < epsilon:
@@ -28,7 +32,7 @@ def sampleMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : float) 
     return validMoves[torch.multinomial(probs, num_samples=1)]
 
 @torch.no_grad()
-def _sampleMove(model : nn.Module, board : Connect4Board, epsilon : float) -> int:
+def getValidationOpponentMove(model : nn.Module, board : Connect4Board, epsilon : float) -> int:
     if len(board.ValidMoves) == 1:
         return board.ValidMoves[0]
     elif random.uniform(0,1) < epsilon:
@@ -52,7 +56,7 @@ def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float) -> Co
             qvalues = model(state).squeeze()
             action = max(board.ValidMoves, key = lambda x: qvalues[x])
         else:
-            action = _sampleMove(model, board, epsilon)
+            action = getValidationOpponentMove(model, board, epsilon)
         board.move(action)
     return board
 
@@ -97,6 +101,8 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
 def loadCheckpoint(model : nn.Module, optimizer : torch.optim.Optimizer, fileName : str, learning_rate : int = None):
     cp = torch.load(f'{fileName}.nn');
     model.load_state_dict(cp['model_state_dict']);
+    if optimizer is None:
+        return
     optimizer.load_state_dict(cp['optimizer_state_dict']);
     if learning_rate is not None:
         for g in optimizer.param_groups:
@@ -143,7 +149,7 @@ def train(model : nn.Module, optimizer : torch.optim.Optimizer, numberOfGames : 
 
         while not env.Finished:
             q = model(createStateTensor(env)).squeeze()
-            action = sampleMove(q, env.ValidMoves, epsilon)
+            action = getTrainingMove(q, env.ValidMoves, epsilon)
             
             stack.append((q, env.ValidMoves.copy(), action, q.clone().detach()))
             env.move(action)
