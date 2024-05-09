@@ -5,6 +5,8 @@ import torch.nn.functional as F
 import torch.optim
 import random
 from connect4 import Connect4Board
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def log(message):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
@@ -48,12 +50,14 @@ def getValidationOpponentMove(model : nn.Module, board : Connect4Board, epsilon 
     return board.ValidMoves[torch.multinomial(probs, num_samples=1)]
 
 @torch.no_grad()
-def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float) -> Connect4Board:
+def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float, qlist : list[int]) -> Connect4Board:
     board = Connect4Board()
     while not board.Finished:
         if qplayer == board.Player:            
             state = createStateTensor(board)
             qvalues = model(state).squeeze()
+            for q in qvalues:
+                qlist.append(q.item())
             action = max(board.ValidMoves, key = lambda x: qvalues[x])
         else:
             action = getValidationOpponentMove(model, board, epsilon)
@@ -64,11 +68,14 @@ def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float) -> Co
 def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
     log(f'Validation with {100*(epsilon)}% random moves')
     train = model.training
+    model.eval()
+
+    qvalues = []
 
     wins = losses = draws = 0
-    games = set()
+    games = set()    
     for _ in range(gamesPerPlayer):
-        board = _playValidationGame(model, Connect4Board.PLAYER1, epsilon)
+        board = _playValidationGame(model, Connect4Board.PLAYER1, epsilon, qvalues)
         gk = board.gameKey
         games.add(gk)
         if board.Winner == Connect4Board.PLAYER1:
@@ -83,7 +90,7 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
     wins = losses = draws = 0
     games = set()
     for _ in range(gamesPerPlayer):
-        board = _playValidationGame(model, Connect4Board.PLAYER2, epsilon)
+        board = _playValidationGame(model, Connect4Board.PLAYER2, epsilon, qvalues)
         gk = board.gameKey
         games.add(gk)
         if board.Winner == Connect4Board.PLAYER2:
@@ -94,6 +101,12 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
             draws += 1
 
     log(f'Player 2: {wins} won, {losses} lost, {draws} draws -> {100*wins/gamesPerPlayer:.2f}%, div: {100*len(games)/gamesPerPlayer:.2f}%')
+    
+    sns.histplot(qvalues, kde=True)
+    plt.title('Distribution of Q-values')
+    plt.xlabel('Q-values')
+    plt.ylabel('Frequency')
+    plt.show()
 
     if train:
         model.train()
