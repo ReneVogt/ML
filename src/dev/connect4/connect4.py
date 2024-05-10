@@ -25,8 +25,8 @@ class ColumnFullError(Connect4BoardError):
 
     
 class Connect4Board:
-    PLAYER1 = -1
-    PLAYER2 = 1
+    PLAYER1 = 1
+    PLAYER2 = 2
     EMPTY = 0
 
     @property

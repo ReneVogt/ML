@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.optim
 import random
 from connect4 import Connect4Board
+import connect4cnn
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -12,10 +13,9 @@ def log(message):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {message}")
 
 def createStateTensor(board : Connect4Board) -> torch.Tensor:
-    state = torch.tensor(board._board, dtype=torch.float32).transpose(0, 1)
-    if board.Player == Connect4Board.PLAYER2:
-        state = -state
-    return torch.stack([torch.stack([state])])
+    transposedBoard = torch.tensor(board._board, dtype=torch.int64).transpose(0, 1)
+    onehot = F.one_hot(transposedBoard, num_classes=3).permute(2, 0, 1)
+    return torch.stack([onehot]).float()
 
 @torch.no_grad()
 def getTrainingMove(qvalues : torch.Tensor, validMoves : list[int], epsilon : float) -> int:
@@ -56,7 +56,7 @@ def _playValidationGame(model : nn.Module, qplayer : int, epsilon : float, qlist
         if qplayer == board.Player:            
             state = createStateTensor(board)
             qvalues = model(state).squeeze()
-            for q in qvalues:
+            for q in [qvalues[x] for x in board.ValidMoves]:
                 qlist.append(q.item())
             action = max(board.ValidMoves, key = lambda x: qvalues[x])
             maxqlist.append(qvalues[action].item())
@@ -75,7 +75,7 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
     maxqvalues = []
 
     wins = losses = draws = 0
-    games = set()    
+    games = set()
     for _ in range(gamesPerPlayer):
         board = _playValidationGame(model, Connect4Board.PLAYER1, epsilon, qvalues, maxqvalues)
         gk = board.gameKey
@@ -159,8 +159,9 @@ def saveCheckpoint(model : nn.Module, optimizer : torch.optim.Optimizer, fileNam
     finally:
         if train: model.train();
 
-def train(model : nn.Module, optimizer : torch.optim.Optimizer, numberOfGames : int, 
-          epsilon : float, omega : float, gamma : float = 0.9, 
+def train(model : connect4cnn.Connect4Cnn, optimizer : torch.optim.Optimizer, numberOfGames : int, batch_size : int,
+          epsilon : float, omega : float, 
+          gamma : float = 0.9, 
           gameOffset : int = 0, log_interval : int = 5000, 
           validation_interval : int = 50000, validation_games : int = 5000,
           checkpoint_interval : int = 50000) -> None:
@@ -174,50 +175,57 @@ def train(model : nn.Module, optimizer : torch.optim.Optimizer, numberOfGames : 
 
     log(f"Starting training at {gameOffset} games for {numberOfGames} games with lr {optimizer.param_groups[0]['lr']} and epsilon {epsilon}.")
 
+    qs = []
+    targetqs = []
+    
+    targetNetwork = connect4cnn.Connect4Cnn()
+    targetNetwork.load_state_dict(model.state_dict())
+    targetNetwork.eval()
+
     for gamesPlayed in range(numberOfGames):
         env = Connect4Board()
-        stack = []
-        actions = []
+        actions = []           
+
+        targetq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1, max=1)
 
         while not env.Finished:
             q = model(createStateTensor(env)).squeeze()
-            action = getTrainingMove(q, env.ValidMoves, epsilon)
-            
-            validMoves = env.ValidMoves.copy()
+            qs.append(q)
+            targetqs.append(targetq)
+            action = getTrainingMove(q, env.ValidMoves, epsilon)            
             env.move(action)
-            reward = 0
-            if env.Winner != 0:
-                reward = 1 # winning reward
-            elif env.Full:
-                if env.Player == Connect4Board.PLAYER1:
-                    reward = 0.5 # draw reward for player 2
-            elif env.Player == Connect4Board.PLAYER2:
-                reward = -0.1 # penalty for longer games for player 1                
-
-            stack.append((q, validMoves, action, q.clone().detach(), reward))
             actions.append(action)
+
+            if env.Finished:
+                reward = 1 if env.Winner != 0 else 0.5 if env.Player == Connect4Board.PLAYER1 else 0
+                targetq[action] = reward
+            else:
+                reward = -0.1 if env.Player == Connect4Board.PLAYER2 else 0
+                nextq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1,max=1)
+                nextmax = -max([nextq[a] for a in env.ValidMoves]).item()
+                targetq[action] = reward + gamma * nextmax
+                targetq = nextq
+
+            if len(qs) == batch_size:
+                predictions = torch.stack(qs)
+                targets = torch.stack(targetqs)
+                loss = F.mse_loss(predictions, targets)
+                losses.append(loss.item())
+                validationLosses.append(loss.item())
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                qs = []
+                targetqs = []
+                targetNetwork.load_state_dict(model.state_dict())
+                targetNetwork.eval()
+                if not env.Finished:
+                    targetq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1, max=1)
 
         gameKey = env.gameKey
         gameKeys.add(gameKey)
         allGameKeys.add(gameKey)    
-
-        (_, nextvalidmoves, action, next_q, reward) = stack[-1]
-        next_q[action] = reward
-        for (_, validmoves, action, targetq, reward) in reversed(stack[:-1]):   
-            next_max = -max([next_q[a] for a in nextvalidmoves]).item()
-            targetq[action] = reward + gamma * next_max
-            next_q = targetq
-            nextvalidmoves = validmoves
-        
-        qs = torch.stack([q for (q, _, _, _, _) in stack])
-        targets = torch.stack([target for (_ , _, _, target, _) in stack])
-        loss = F.mse_loss(qs, targets)
-        losses.append(loss.item())
-        validationLosses.append(loss.item())
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
+       
         games = gameOffset + gamesPlayed + 1
 
         if games % log_interval == 0:
