@@ -159,7 +159,7 @@ def saveCheckpoint(model : nn.Module, optimizer : torch.optim.Optimizer, fileNam
     finally:
         if train: model.train();
 
-def train(model : connect4cnn.Connect4Cnn, optimizer : torch.optim.Optimizer, numberOfGames : int, batch_size : int,
+def train(model : connect4cnn.Connect4Cnn, optimizer : torch.optim.Optimizer, numberOfGames : int,
           epsilon : float, omega : float, 
           gamma : float = 0.9, 
           gameOffset : int = 0, log_interval : int = 5000, 
@@ -175,22 +175,18 @@ def train(model : connect4cnn.Connect4Cnn, optimizer : torch.optim.Optimizer, nu
 
     log(f"Starting training at {gameOffset} games for {numberOfGames} games with lr {optimizer.param_groups[0]['lr']} and epsilon {epsilon}.")
 
-    qs = []
-    targetqs = []
-    
-    targetNetwork = connect4cnn.Connect4Cnn()
-    targetNetwork.load_state_dict(model.state_dict())
-    targetNetwork.eval()
-
     for gamesPlayed in range(numberOfGames):
         env = Connect4Board()
         actions = []           
 
-        targetq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1, max=1)
+        qs = []
+        targetqs = []
+    
+        q = model(createStateTensor(env)).squeeze()
 
         while not env.Finished:
-            q = model(createStateTensor(env)).squeeze()
             qs.append(q)
+            targetq = q.clone().detach().clamp(min=-1, max=1)
             targetqs.append(targetq)
             action = getTrainingMove(q, env.ValidMoves, epsilon)            
             env.move(action)
@@ -201,30 +197,24 @@ def train(model : connect4cnn.Connect4Cnn, optimizer : torch.optim.Optimizer, nu
                 targetq[action] = reward
             else:
                 reward = -0.1 if env.Player == Connect4Board.PLAYER2 else 0
-                nextq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1,max=1)
-                nextmax = -max([nextq[a] for a in env.ValidMoves]).item()
+                q = model(createStateTensor(env)).squeeze()
+                nextmax = -max([q[a] for a in env.ValidMoves]).item()
                 targetq[action] = reward + gamma * nextmax
-                targetq = nextq
-
-            if len(qs) == batch_size:
-                predictions = torch.stack(qs)
-                targets = torch.stack(targetqs)
-                loss = F.mse_loss(predictions, targets)
-                losses.append(loss.item())
-                validationLosses.append(loss.item())
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                qs = []
-                targetqs = []
-                targetNetwork.load_state_dict(model.state_dict())
-                targetNetwork.eval()
-                if not env.Finished:
-                    targetq = targetNetwork(createStateTensor(env)).squeeze().clone().detach().clamp(min=-1, max=1)
 
         gameKey = env.gameKey
         gameKeys.add(gameKey)
-        allGameKeys.add(gameKey)    
+        allGameKeys.add(gameKey)
+
+        predictions = torch.stack(qs)
+        targets = torch.stack(targetqs)
+        loss = F.mse_loss(predictions, targets)
+        losses.append(loss.item())
+        validationLosses.append(loss.item())
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        qs = []
+        targetqs = []
        
         games = gameOffset + gamesPlayed + 1
 
