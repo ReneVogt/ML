@@ -1,8 +1,8 @@
+import sys
+sys.path.append('../../')
+
 import unittest
-import importlib
-import connect4 as connect4
-importlib.reload(connect4)
-from connect4 import Connect4Board, GameFinishedError as GameFinishedError, ColumnFullError
+from connect4.board import Connect4Board, GameFinishedError, ColumnFullError
 
 class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
     def test_CorrectIndexer(self):
@@ -64,7 +64,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([], env.ValidMoves)
         self.assertEqual("010101101010232323323232454545545454666666", env.gameKey)
 
-        with self.assertRaises(connect4.GameFinishedError):
+        with self.assertRaises(GameFinishedError):
             env.move(0)
 
     def test_FullColumn0_CorrectValidMovesKeyAndException(self):
@@ -78,7 +78,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([1, 2, 3, 4, 5, 6], env.ValidMoves)
         self.assertEqual("000000", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(0)
 
     def test_FullColumn1_CorrectValidMovesKeyAndException(self):
@@ -92,7 +92,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 2, 3, 4, 5, 6], env.ValidMoves)
         self.assertEqual("111111", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(1)
 
     def test_FullColumn2_CorrectValidMovesKeyAndException(self):
@@ -106,7 +106,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 1, 3, 4, 5, 6], env.ValidMoves)
         self.assertEqual("222222", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(2)
 
     def test_FullColumn3_CorrectValidMovesKeyAndException(self):
@@ -120,7 +120,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 1, 2, 4, 5, 6], env.ValidMoves)
         self.assertEqual("333333", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(3)
 
     def test_FullColumn4_CorrectValidMovesKeyAndException(self):
@@ -134,7 +134,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 1, 2, 3, 5, 6], env.ValidMoves)
         self.assertEqual("444444", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(4)
 
     def test_FullColumn5_CorrectValidMovesKeyAndException(self):
@@ -148,7 +148,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 1, 2, 3, 4, 6], env.ValidMoves)
         self.assertEqual("555555", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(5)
 
     def test_FullColumn6_CorrectValidMovesKeyAndException(self):
@@ -162,7 +162,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual([0, 1, 2, 3, 4, 5], env.ValidMoves)
         self.assertEqual("666666", env.gameKey)
 
-        with self.assertRaises(connect4.ColumnFullError):
+        with self.assertRaises(ColumnFullError):
             env.move(6)
 
 class TestConnect4Board_Player1WinsHorizontally(unittest.TestCase):

@@ -1,3 +1,5 @@
+import torch as T
+
 class Connect4BoardError(Exception):
     """
     Base class for errors raised by the
@@ -33,17 +35,17 @@ class Connect4Board:
     def Player(self) -> int:
         return self._player
     @property
-    def ValidMoves(self) -> list[int]:
-        return self._validmoves
+    def ValidMovesMask(self) -> T.Tensor:
+        return T.tensor(self._validmoves, dtype=bool)
     @property
     def Winner(self) -> int:
         return self._winner
     @property
     def Full(self) -> bool:
-        return len(self._validmoves) == 0
+        return not any(self._validmoves)
     @property
     def Finished(self) -> bool:
-        return self.Full or self.Winner != Connect4Board.EMPTY
+        return self.Winner != Connect4Board.EMPTY or self.Full
     @property
     def gameKey(self) -> str:
         return ''.join(str(action) for action in self._history)
@@ -54,7 +56,7 @@ class Connect4Board:
         self._history = []
         self._board = [[Connect4Board.EMPTY for _ in range(6)] for _ in range(7)]
         self._heights = [0, 0, 0, 0, 0, 0, 0]
-        self._validmoves = [0, 1, 2, 3, 4, 5, 6]
+        self._validmoves = [True]*7
 
     def __getitem__(self, position : tuple[int, int]) -> int:
         """
@@ -84,7 +86,7 @@ class Connect4Board:
         self._board[action][row] = self._player
         self._heights[action] = row + 1
         if row == 5:
-            self._validmoves.remove(action)
+            self._validmoves[action] = False
 
         self._winner = self._getWinner(action, row, self._player)
         self._history.append(action)
