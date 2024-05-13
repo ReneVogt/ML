@@ -8,6 +8,7 @@ class TicTacToeBoard():
         self.board = [' ']*9
         self.player = 'X'
         self.opponent = 'O'
+        self.history = []
 
     @property
     def won(self) -> bool:
@@ -36,6 +37,10 @@ class TicTacToeBoard():
         Returns a mask tensor indicating valid and invalid moves.
         """
         return T.tensor([self.is_valid(a) for a in range(9)], dtype=bool)
+    
+    @property
+    def gameKey(self) -> str:
+        return ''.join(str(a) for a in self.history)
 
     def is_valid(self, action):
         return self.board[action] == ' '
@@ -63,6 +68,7 @@ class TicTacToeBoard():
         
         self.board[action] = self.player
         self.player, self.opponent = self.opponent, self.player
+        self.history.append(action)
 
     def reset(self):
         """
@@ -71,6 +77,7 @@ class TicTacToeBoard():
         self.board = [' ']*9
         self.player = 'X'
         self.opponent = 'O'
+        self.history = []
 
     @property
     def stateTensor(self):

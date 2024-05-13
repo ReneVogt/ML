@@ -13,15 +13,17 @@ def _validateTicTacToeGame(agent : TicTacToeAgent, env : TicTacToeBoard, results
     """
     Recursively plays a single TicTacToe game by choosing a
     random move followed by a max-Q move.
-    """
+    """    
     state, player, opponent = env.state, env.player, env.opponent
     for action in [a for a in range(9) if env.is_valid(a)]:
+        hist = 1
         env.move(action)
         if env.is_won():
             results['losses'] += 1
         elif env.is_full():
             results['draws'] += 1
         else:
+            hist = 2
             q = agent.getBestAction(env.stateTensor, env.validMovesMask)
             env.move(q)
             if env.is_won():
@@ -31,6 +33,7 @@ def _validateTicTacToeGame(agent : TicTacToeAgent, env : TicTacToeBoard, results
             else:
                 _validateTicTacToeGame(agent, env, results)
         env.board, env.player, env.opponent = list(state), player, opponent
+        env.history = env.history[:-hist]
 
 def validateTicTacToe(agent : TicTacToeAgent):
     """
