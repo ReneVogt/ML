@@ -10,7 +10,7 @@ class Connect4Cnn(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0) # [B, 64, (5 - 2)/2 + 1 = 2, (6 - 2)/2 + 1 = 3] 
         self.flatten = nn.Flatten(start_dim=1) # [B, 64*2*3 = 384]
         self.linear = nn.Linear(384, 128)
-        self.out = nn.Linear(128, 7)
+        self.out = nn.Linear(128, 7)        
 
     def forward(self, x):
         self.convout = x = F.relu(self.conv(x))

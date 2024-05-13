@@ -155,23 +155,23 @@ class TestTraining_StateTennor(unittest.TestCase):
 
         board.move(0)
         expectedTensor[0, 0, 0, 0] = 0
-        expectedTensor[0, 1, 0, 0] = 1 
+        expectedTensor[0, 2, 0, 0] = 1 
 
         board.move(1)
         expectedTensor[0, 0, 0, 1] = 0
-        expectedTensor[0, 2, 0, 1] = 1
+        expectedTensor[0, 1, 0, 1] = 1
 
         board.move(1)
         expectedTensor[0, 0, 1, 1] = 0 
-        expectedTensor[0, 1, 1, 1] = 1 
+        expectedTensor[0, 2, 1, 1] = 1 
 
         board.move(2)
         expectedTensor[0, 0, 0, 2] = 0 
-        expectedTensor[0, 2, 0, 2] = 1 
+        expectedTensor[0, 1, 0, 2] = 1 
 
         board.move(2)
         expectedTensor[0, 0, 1, 2] = 0 
-        expectedTensor[0, 1, 1, 2] = 1 
+        expectedTensor[0, 2, 1, 2] = 1 
 
         result = training.createStateTensor(board)
         self.assertTrue(torch.equal(result, expectedTensor))

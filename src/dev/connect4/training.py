@@ -15,6 +15,8 @@ def log(message):
 def createStateTensor(board : Connect4Board) -> torch.Tensor:
     transposedBoard = torch.tensor(board._board, dtype=torch.int64).transpose(0, 1)
     onehot = F.one_hot(transposedBoard, num_classes=3).permute(2, 0, 1)
+    if board.Player == Connect4Board.PLAYER2:
+        onehot = onehot[torch.tensor([0,2,1])]
     return torch.stack([onehot]).float()
 
 @torch.no_grad()
@@ -88,18 +90,18 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
             draws += 1
 
     log(f'Player 1: {wins} won, {losses} lost, {draws} draws -> {100*wins/gamesPerPlayer:.2f}%, div: {100*len(games)/gamesPerPlayer:.2f}%')
-    sns.histplot(qvalues, kde=True)
-    plt.title('Distribution of Q-values')
-    plt.xlabel('Q-values')
-    plt.ylabel('Frequency')
-    plt.show()
-    qvalues = []
-    sns.histplot(maxqvalues, kde=True)
-    plt.title('Distribution of Max-Q-values')
-    plt.xlabel('Q-values')
-    plt.ylabel('Frequency')
-    plt.show()
-    maxqvalues = []
+    # sns.histplot(qvalues, kde=True)
+    # plt.title('Distribution of Q-values')
+    # plt.xlabel('Q-values')
+    # plt.ylabel('Frequency')
+    # plt.show()
+    # qvalues = []
+    # sns.histplot(maxqvalues, kde=True)
+    # plt.title('Distribution of Max-Q-values')
+    # plt.xlabel('Q-values')
+    # plt.ylabel('Frequency')
+    # plt.show()
+    # maxqvalues = []
 
     wins = losses = draws = 0
     games = set()
@@ -116,16 +118,16 @@ def validate(model : nn.Module, gamesPerPlayer : int, epsilon : float) -> None:
 
     log(f'Player 2: {wins} won, {losses} lost, {draws} draws -> {100*wins/gamesPerPlayer:.2f}%, div: {100*len(games)/gamesPerPlayer:.2f}%')
     
-    sns.histplot(qvalues, kde=True)
-    plt.title('Distribution of Q-values')
-    plt.xlabel('Q-values')
-    plt.ylabel('Frequency')
-    plt.show()
-    sns.histplot(maxqvalues, kde=True)
-    plt.title('Distribution of Max-Q-values')
-    plt.xlabel('Q-values')
-    plt.ylabel('Frequency')
-    plt.show()
+    # sns.histplot(qvalues, kde=True)
+    # plt.title('Distribution of Q-values')
+    # plt.xlabel('Q-values')
+    # plt.ylabel('Frequency')
+    # plt.show()
+    # sns.histplot(maxqvalues, kde=True)
+    # plt.title('Distribution of Max-Q-values')
+    # plt.xlabel('Q-values')
+    # plt.ylabel('Frequency')
+    # plt.show()
 
     if train:
         model.train()
