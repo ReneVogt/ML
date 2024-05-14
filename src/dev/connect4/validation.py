@@ -13,7 +13,7 @@ def _playValidationGame(agent : Connect4Agent, qplayer : int, omega : float) -> 
 
 @T.no_grad()
 def validate(agent : Connect4Agent, gamesPerPlayer : int, omega : float) -> None:
-    print(f'Validation with {100*(omega)}% random moves')
+    print(f'Validation with {100*(omega)}% random moves for {gamesPerPlayer} games per player.')
 
     wins = losses = draws = 0
     games = set()

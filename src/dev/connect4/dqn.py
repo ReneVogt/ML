@@ -7,23 +7,21 @@ class Connect4Dqn(nn.Module):
         super(Connect4Dqn, self).__init__()
 
         # input: [B,3,6,7]
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1) # [B, 32, 6, 7]
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1) # [B, 64, 6, 7]
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0) # [B, 64, 3, 3]
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1) # [B, 16, 6, 7]
+        self.conv2 = nn.Conv2d(16, 24, kernel_size=3, stride=1, padding=1) # [B, 24, 6, 7]
 
-        self.flatten = nn.Flatten(start_dim=1) # [B, 576]
+        self.flatten = nn.Flatten(start_dim=1) # [B, 1008]
 
-        self.fc1 = nn.Linear(576, 288)
-        self.fc2 = nn.Linear(288, 72)
-        self.fc3 = nn.Linear(72, 7)
+        self.fc1 = nn.Linear(1008, 504)
+        self.fc2 = nn.Linear(504, 126)
+        self.fc3 = nn.Linear(126, 7)
 
         self.loss = nn.MSELoss()
-        self.optimizer = o.Adam(self.parameters(), lr)
+        self.optimizer = o.SGD(self.parameters(), lr)
 
     def forward(self, x):
         self.conv1out = x = F.relu(self.conv1(x))
         self.conv2out = x = F.relu(self.conv2(x))
-        self.poolout = x = self.pool(x)
 
         x = self.flatten(x)
 

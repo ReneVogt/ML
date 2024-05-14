@@ -21,13 +21,13 @@ sealed class NeuralNetworkMoveGenerator : IGenerateMoves
 
     public int GetMove(Connect4Board env)
     {
-        var inputTensor = new DenseTensor<float>([3, 6, 7]);
+        var inputTensor = new DenseTensor<float>([1, 3, 6, 7]);
         for (var col = 0; col < 7; col++)
             for (var row = 0; row < 6; row++)
             {
-                inputTensor[0, row, col] = env[col,row] == 0 ? 1 : 0;
-                inputTensor[1, row, col] = env[col, row] == env.Player ? 1 : 0;
-                inputTensor[2, row, col] = env[col, row] == env.Opponent ? 1 : 0;
+                inputTensor[0, 0, row, col] = env[col,row] == 0 ? 1 : 0;
+                inputTensor[0, 1, row, col] = env[col, row] == env.Player ? 1 : 0;
+                inputTensor[0, 2, row, col] = env[col, row] == env.Opponent ? 1 : 0;
             }
 
         lock (inferenceSession)

@@ -2,6 +2,7 @@ import numpy as np
 import torch as T
 import torch as T
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 from connect4.dqn import Connect4Dqn
 from connect4.board import Connect4Board
 
@@ -12,13 +13,24 @@ def createStateTensor(board : Connect4Board) -> T.Tensor:
         onehot = onehot[T.tensor([0,2,1])]
     return onehot.float()
 
+def calculateReward(board : Connect4Board) -> float:
+    if board.Winner != Connect4Board.EMPTY:
+        return 1
+    
+    if board.Full:
+        return -0.1 if board.Player == Connect4Board.PLAYER2 else 0.5
+    
+    return -0.1 if board.Player == Connect4Board.PLAYER2 else 0
+
 def _validMovesFromMask(validMovesMask : T.Tensor) -> list[int]:
     return [a for a in range(7) if validMovesMask[a]]
 
 _NEGINF = float('-inf')
 
 class Connect4Agent():
-    def __init__(self, gamma : float, epsilon : float, lr : float, batch_size : int, memory_size : int, epsilon_end : float, epsilon_decay : float) -> None:
+    def __init__(self, lr : float = 0.001, 
+                 epsilon : float = 0.5, epsilon_end : float = 0.01, epsilon_decay : float = 0,
+                 batch_size : int = 512, memory_size : int = 0x10000, gamma : float = 0.9,) -> None:
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_end = epsilon_end
@@ -34,6 +46,8 @@ class Connect4Agent():
         self.reward_memory = np.zeros(memory_size, dtype=np.float32)
         self.terminal_memory = np.zeros(memory_size, dtype=bool)
         self.validmoves_memory = np.zeros((memory_size, 7), dtype=bool)
+
+        self.losses = []
 
     @property
     def numberOfParameters(self) -> int:
@@ -106,20 +120,22 @@ class Connect4Agent():
         
         self.model.optimizer.zero_grad()
         loss = self.model.loss(q_eval, q_target)
+        self.losses.append(loss.item())
         loss.backward()
         self.model.optimizer.step()
 
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
 
     @T.no_grad()
-    def loadCheckpoint(self, fileName : str, learning_rate : int = None) -> None:
+    def loadCheckpoint(self, fileName : str) -> None:
         cp = T.load(f'{fileName}.nn');
         self.model.load_state_dict(cp['model_state_dict']);
         self.model.optimizer.load_state_dict(cp['optimizer_state_dict']);
         self.epsilon = float(cp['epsilon'])
-        if learning_rate is not None:
-            for g in self.model.optimizer.param_groups:
-                g['lr'] = learning_rate
+
+        self.losses = []
+
+        print(f"Loaded checkpoint {fileName}, epsilon: {self.epsilon}, lr: {self.model.optimizer.param_groups[0]['lr']}")
 
     @T.no_grad()
     def saveCheckpoint(self, fileName : str) -> None:
@@ -137,3 +153,23 @@ class Connect4Agent():
             print(f"Checkpoint '{fileName}' saved.")
         except Exception as e:
             print(f"Failed to save checkpoint '{fileName}': {e}")
+
+    @T.no_grad()
+    def printStats(self) -> None:
+        count = len(self.losses)
+        if count < 1:
+            return
+        print(f'Average loss (last {count}): {sum(self.losses)/count}, last: {self.losses[-1]}')
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.losses, linestyle='-', color='b', label='losses')
+
+        plt.title(f'Last {count} losses')
+        plt.xlabel('Step')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+
+        plt.show()
+
+        self.losses = []

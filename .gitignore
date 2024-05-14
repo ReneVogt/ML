@@ -356,3 +356,4 @@ test.ipynb
 *.nn
 *.onnx
 !src/dev/policygradient/connect4.nn
+sketch.ipynb
