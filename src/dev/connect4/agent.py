@@ -2,7 +2,6 @@ import numpy as np
 import torch as T
 import torch as T
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
 from connect4.dqn import Connect4Dqn
 from connect4.board import Connect4Board
 
@@ -18,7 +17,7 @@ def calculateReward(board : Connect4Board) -> float:
         return 1
     
     if board.Full:
-        return -0.1 if board.Player == Connect4Board.PLAYER2 else 0.5
+        return -0.1 if board.Player == Connect4Board.PLAYER2 else 0.2
     
     return -0.1 if board.Player == Connect4Board.PLAYER2 else 0
 
@@ -30,7 +29,7 @@ _NEGINF = float('-inf')
 class Connect4Agent():
     def __init__(self, lr : float = 0.001, 
                  epsilon : float = 0.5, epsilon_end : float = 0.01, epsilon_decay : float = 0,
-                 batch_size : int = 512, memory_size : int = 0x10000, gamma : float = 0.9,) -> None:
+                 batch_size : int = 512, memory_size : int = 0x10000, gamma : float = 0.9, targetUpdateInterval : int = 1) -> None:
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_end = epsilon_end
@@ -38,8 +37,13 @@ class Connect4Agent():
         self.batch_size = batch_size
         self.memory_size = memory_size
         self.memory_counter = 0
+        self.iteration_counter = 0
+        self.targetUpdateInterval = targetUpdateInterval
 
-        self.model = Connect4Dqn(lr)
+        self.evaluationModel = Connect4Dqn(lr)
+        self.targetModel = Connect4Dqn(lr)
+        self.targetModel.load_state_dict(self.evaluationModel.state_dict())
+
         self.state_memory = np.zeros((memory_size, 3, 6, 7), dtype=np.float32)
         self.next_state_memory = np.zeros((memory_size, 3, 6, 7), dtype=np.float32)
         self.action_memory = np.zeros(memory_size, dtype=np.int32)
@@ -51,7 +55,7 @@ class Connect4Agent():
 
     @property
     def numberOfParameters(self) -> int:
-        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+        return sum(p.numel() for p in self.evaluationModel.parameters() if p.requires_grad)
 
     @T.no_grad()
     def store_transition(self, state, action, next_state, next_validmoves, terminal, reward):
@@ -67,19 +71,22 @@ class Connect4Agent():
 
     @T.no_grad()
     def getTrainingAction(self, state : T.Tensor, validMovesMask : T.Tensor) -> int:
-        if np.random.random() > self.epsilon:
-            self.model.eval()
-            actions = self.model.forward(state.unsqueeze(0))[0]
-            actions[~validMovesMask] = _NEGINF
-            return T.argmax(actions).item()
-
         validMoves = _validMovesFromMask(validMovesMask)
-        return np.random.choice(validMoves)
+        if len(validMoves) == 1:
+            return validMoves[0]        
+        if np.random.random() < self.epsilon:
+            return np.random.choice(validMoves)
+        
+        self.evaluationModel.eval()
+        qvalues = self.evaluationModel(state.unsqueeze(0)).squeeze()
+        validqs = T.tensor([qvalues[a] for a in validMoves])
+        probs = F.softmax(validqs, dim=0)
+        return validMoves[T.multinomial(probs, num_samples=1)]
 
     @T.no_grad()
     def getBestAction(self, state : T.Tensor, validMovesMask : T.Tensor) -> int:
-        self.model.eval()
-        actions = self.model.forward(state.unsqueeze(0))[0]
+        self.evaluationModel.eval()
+        actions = self.evaluationModel.forward(state.unsqueeze(0))[0]
         actions[~validMovesMask] = _NEGINF
         return T.argmax(actions).item()
     
@@ -89,8 +96,8 @@ class Connect4Agent():
         if np.random.uniform(0,1) < omega:
             return np.random.choice(validMoves)
 
-        self.model.eval()
-        qvalues = self.model(state.unsqueeze(0)).squeeze()
+        self.evaluationModel.eval()
+        qvalues = self.evaluationModel(state.unsqueeze(0)).squeeze()
         validqs = T.tensor([qvalues[a] for a in validMoves])
         probs = F.softmax(validqs, dim=0)
         return validMoves[T.multinomial(probs, num_samples=1)]
@@ -109,46 +116,51 @@ class Connect4Agent():
         terminal_batch = T.tensor(self.terminal_memory[batch])
         validmoves_batch = T.tensor(self.validmoves_memory[batch])        
 
-        self.model.eval()
-        q_next = self.model.forward(next_state_batch)
+        self.targetModel.eval()
+        q_next = self.targetModel.forward(next_state_batch)
         q_next[~validmoves_batch] = _NEGINF
         q_next[terminal_batch] = 0.0
         
-        self.model.train()
-        q_eval = self.model.forward(state_batch)[batch_index, action_batch]
+        self.evaluationModel.train()
+        q_eval = self.evaluationModel.forward(state_batch)[batch_index, action_batch]
         q_target = reward_batch - self.gamma*T.max(q_next, dim=1)[0]
         
-        self.model.optimizer.zero_grad()
-        loss = self.model.loss(q_eval, q_target)
+        self.evaluationModel.optimizer.zero_grad()
+        loss = self.evaluationModel.loss(q_eval, q_target)
         self.losses.append(loss.item())
         loss.backward()
-        self.model.optimizer.step()
+        self.evaluationModel.optimizer.step()
+
+        self.iteration_counter += 1
+        if self.iteration_counter % self.targetUpdateInterval == 0:
+            self.updateTargetModel()
 
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
 
     @T.no_grad()
+    def updateTargetModel(self) -> None:
+        self.targetModel.load_state_dict(self.evaluationModel.state_dict())
+
+    @T.no_grad()
     def loadCheckpoint(self, fileName : str) -> None:
         cp = T.load(f'{fileName}.nn');
-        self.model.load_state_dict(cp['model_state_dict']);
-        self.model.optimizer.load_state_dict(cp['optimizer_state_dict']);
-        self.epsilon = float(cp['epsilon'])
+        self.evaluationModel.load_state_dict(cp['model_state_dict']);
+        self.updateTargetModel()
 
         self.losses = []
 
-        print(f"Loaded checkpoint {fileName}, epsilon: {self.epsilon}, lr: {self.model.optimizer.param_groups[0]['lr']}")
+        print(f"Loaded checkpoint {fileName}.")
 
     @T.no_grad()
     def saveCheckpoint(self, fileName : str) -> None:
-        self.model.eval();
+        self.evaluationModel.eval();
         try:
             T.save({
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.model.optimizer.state_dict(),
-                'epsilon': str(self.epsilon),
+                'model_state_dict': self.evaluationModel.state_dict()
             }, f'{fileName}.nn');
 
             dummy_input = createStateTensor(Connect4Board())
-            T.onnx.export(self.model, dummy_input.unsqueeze(0), f"{fileName}.onnx");
+            T.onnx.export(self.evaluationModel, dummy_input.unsqueeze(0), f"{fileName}.onnx");
 
             print(f"Checkpoint '{fileName}' saved.")
         except Exception as e:
@@ -159,17 +171,6 @@ class Connect4Agent():
         count = len(self.losses)
         if count < 1:
             return
-        print(f'Average loss (last {count}): {sum(self.losses)/count}, last: {self.losses[-1]}')
         
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.losses, linestyle='-', color='b', label='losses')
-
-        plt.title(f'Last {count} losses')
-        plt.xlabel('Step')
-        plt.ylabel('Loss')
-        plt.legend()
-        plt.grid(True)
-
-        plt.show()
-
+        print(f'Average loss (last {count}): {sum(self.losses)/count}, last: {self.losses[-1]}, epsilon: {self.epsilon}')
         self.losses = []
