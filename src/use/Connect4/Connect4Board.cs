@@ -2,7 +2,7 @@
 
 namespace Connect4;
 
-sealed class Connect4Board
+public sealed class Connect4Board
 {
     readonly Stack<int> history = new();
 

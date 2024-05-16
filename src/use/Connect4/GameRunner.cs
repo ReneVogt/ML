@@ -67,7 +67,7 @@ sealed class GameRunner(IGenerateMoves redMoveGenerator, IGenerateMoves yellowMo
     {
         var action = env.Undo();
         WriteStone(action, env.Height(action), ConsoleColor.Black);
-        if (redMoveGenerator.IsHuman && yellowMoveGenerator.IsHuman) return;
+        if (redMoveGenerator.IsHuman && yellowMoveGenerator.IsHuman || !env.CanUndo) return;       
         action = env.Undo();
         WriteStone(action, env.Height(action), ConsoleColor.Black);
     }
