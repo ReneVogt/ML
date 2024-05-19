@@ -44,6 +44,10 @@ class Connect4Agent():
         self.targetModel = Connect4Dqn(lr)
         self.targetModel.load_state_dict(self.evaluationModel.state_dict())
 
+        self.device = T.device("cuda" if T.cuda.is_available() else "cpu")
+        self.evaluationModel.to(self.device)
+        self.targetModel.to(self.device)
+
         self.state_memory = np.zeros((memory_size, 3, 6, 7), dtype=np.float32)
         self.next_state_memory = np.zeros((memory_size, 3, 6, 7), dtype=np.float32)
         self.action_memory = np.zeros(memory_size, dtype=np.int32)
@@ -52,6 +56,8 @@ class Connect4Agent():
         self.validmoves_memory = np.zeros((memory_size, 7), dtype=bool)
 
         self.losses = []
+
+        print(f'Agent created, network has {self.numberOfParameters} parameters and runs on {self.device}.')
 
     @property
     def numberOfParameters(self) -> int:
@@ -71,22 +77,16 @@ class Connect4Agent():
 
     @T.no_grad()
     def getTrainingAction(self, state : T.Tensor, validMovesMask : T.Tensor) -> int:
-        validMoves = _validMovesFromMask(validMovesMask)
-        if len(validMoves) == 1:
-            return validMoves[0]        
-        if np.random.random() < self.epsilon:
-            return np.random.choice(validMoves)
+        if np.random.random() > self.epsilon:
+            return self.getBestAction(state, validMovesMask)
         
-        self.evaluationModel.eval()
-        qvalues = self.evaluationModel(state.unsqueeze(0)).squeeze()
-        validqs = T.tensor([qvalues[a] for a in validMoves])
-        probs = F.softmax(validqs, dim=0)
-        return validMoves[T.multinomial(probs, num_samples=1)]
+        validMoves = _validMovesFromMask(validMovesMask)
+        return np.random.choice(validMoves)
 
     @T.no_grad()
     def getBestAction(self, state : T.Tensor, validMovesMask : T.Tensor) -> int:
         self.evaluationModel.eval()
-        actions = self.evaluationModel.forward(state.unsqueeze(0))[0]
+        actions = self.evaluationModel.forward(state.unsqueeze(0).to(self.device))[0]
         actions[~validMovesMask] = _NEGINF
         return T.argmax(actions).item()
     
@@ -97,7 +97,7 @@ class Connect4Agent():
             return np.random.choice(validMoves)
 
         self.evaluationModel.eval()
-        qvalues = self.evaluationModel(state.unsqueeze(0)).squeeze()
+        qvalues = self.evaluationModel(state.unsqueeze(0).to(self.device)).squeeze()
         validqs = T.tensor([qvalues[a] for a in validMoves])
         probs = F.softmax(validqs, dim=0)
         return validMoves[T.multinomial(probs, num_samples=1)]
@@ -117,16 +117,16 @@ class Connect4Agent():
         validmoves_batch = T.tensor(self.validmoves_memory[batch])        
 
         self.targetModel.eval()
-        q_next = self.targetModel.forward(next_state_batch)
+        q_next = self.targetModel.forward(next_state_batch.to(self.device))
         q_next[~validmoves_batch] = _NEGINF
         q_next[terminal_batch] = 0.0
         
         self.evaluationModel.train()
-        q_eval = self.evaluationModel.forward(state_batch)[batch_index, action_batch]
+        q_eval = self.evaluationModel.forward(state_batch.to(self.device))[batch_index, action_batch]
         q_target = reward_batch - self.gamma*T.max(q_next, dim=1)[0]
         
         self.evaluationModel.optimizer.zero_grad()
-        loss = self.evaluationModel.loss(q_eval, q_target)
+        loss = self.evaluationModel.loss(q_eval, q_target).to(self.device)
         self.losses.append(loss.item())
         loss.backward()
         self.evaluationModel.optimizer.step()
@@ -158,9 +158,6 @@ class Connect4Agent():
             T.save({
                 'model_state_dict': self.evaluationModel.state_dict()
             }, f'{fileName}.nn');
-
-            dummy_input = createStateTensor(Connect4Board())
-            T.onnx.export(self.evaluationModel, dummy_input.unsqueeze(0), f"{fileName}.onnx");
 
             print(f"Checkpoint '{fileName}' saved.")
         except Exception as e:
