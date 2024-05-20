@@ -93,6 +93,9 @@ class Connect4Agent():
     @T.no_grad()
     def getValidationOpponentMove(self, state : T.Tensor, validMovesMask : T.Tensor, omega : float) -> int:
         validMoves = _validMovesFromMask(validMovesMask)
+        if len(validMoves) == 1:
+            return validMoves[0]
+        
         if np.random.uniform(0,1) < omega:
             return np.random.choice(validMoves)
 
