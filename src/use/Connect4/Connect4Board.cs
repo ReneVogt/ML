@@ -53,7 +53,7 @@ public sealed class Connect4Board
     public bool Finished => Winner != 0 || Full;
     public bool CanUndo => history.Count > 0;
 
-    public ImmutableArray<int> ValidMoves { get; private set; } = new int[] { 0, 1, 2, 3, 4, 5, 6 }.ToImmutableArray();
+    public ImmutableArray<int> ValidMoves { get; private set; } = [0, 1, 2, 3, 4, 5, 6];
     void SetValidMoves() =>
         ValidMoves = Enumerable.Range(0, 7).Where(column => Height(column) < 6).ToImmutableArray();
 
@@ -207,6 +207,14 @@ public sealed class Connect4Board
         Winner = 0;
         (Player, Opponent) = (Opponent, Player);
         return column;
+    }
+    public void Clear()
+    {
+        State = 0;
+        Player = 1;
+        Opponent = 2;
+        history.Clear();
+        Winner = 0;
     }
     public Connect4Board Clone()
     {

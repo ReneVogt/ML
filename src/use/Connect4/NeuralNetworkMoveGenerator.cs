@@ -8,7 +8,7 @@ sealed class NeuralNetworkMoveGenerator : IGenerateMoves
 {
     static readonly InferenceSession inferenceSession;
 
-    public bool IsHuman => false;
+    public string Name => "NeuralNet";
 
     static NeuralNetworkMoveGenerator()
     {
@@ -19,7 +19,7 @@ sealed class NeuralNetworkMoveGenerator : IGenerateMoves
         inferenceSession = new InferenceSession(model);
     }
 
-    public int GetMove(Connect4Board env)
+    public Task<int> GetMoveAsync(Connect4Board env)
     {
         var inputTensor = new DenseTensor<float>([1, 3, 6, 7]);
         for (var col = 0; col < 7; col++)
@@ -35,7 +35,7 @@ sealed class NeuralNetworkMoveGenerator : IGenerateMoves
             var inputs = new NamedOnnxValue[] { NamedOnnxValue.CreateFromTensor(inferenceSession.InputNames[0], inputTensor) };
             using var results = inferenceSession.Run(inputs);
             var result = results.First().AsTensor<float>();
-            return Enumerable.Range(0, 7).Where(a => env.Height(a) < 6).MaxBy(a => result[0, a]);
+            return Task.FromResult(Enumerable.Range(0, 7).Where(a => env.Height(a) < 6).MaxBy(a => result[0, a]));
         }
     }
 }

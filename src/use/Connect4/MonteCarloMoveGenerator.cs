@@ -4,6 +4,9 @@ namespace Connect4;
 
 sealed class MonteCarloMoveGenerator : IGenerateMoves
 {
+    const int TimeToThink = 1000;
+    const int NumberOfThreads = 8;
+
     sealed class TreeNode(ulong key)
     {
         public ulong Key { get; } = key;
@@ -13,17 +16,18 @@ sealed class MonteCarloMoveGenerator : IGenerateMoves
     }
 
     static readonly double C = Math.Sqrt(2);
-    static readonly ConcurrentDictionary<ulong, TreeNode> nodes = new();
+    
+    readonly ConcurrentDictionary<ulong, TreeNode> nodes = new();
 
-    public bool IsHuman => false;
-    public int GetMove(Connect4Board env)
+    public string Name => "MCTS";
+    public async Task<int> GetMoveAsync(Connect4Board env)
     {
         var key = env.State;
         var node = nodes.GetOrAdd(key, k => new TreeNode(k));
 
-        using CancellationTokenSource cts = new (10000);
+        using CancellationTokenSource cts = new (TimeToThink);
 
-        Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Task.Run(() => MonteCarloTreeSearch(env.Clone(), cts.Token)))).Wait();
+        await Task.WhenAll(Enumerable.Range(0, NumberOfThreads).Select(_ => Task.Run(() => MonteCarloTreeSearch(env.Clone(), cts.Token))));
 
         return node.Simulations.Select((simulations, action) => (simulations, action)).MaxBy(x => x.simulations).action;
     }

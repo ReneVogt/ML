@@ -2,6 +2,6 @@
 
 interface IGenerateMoves
 {
-    bool IsHuman { get; }
-    int GetMove(Connect4Board env);
+    string Name { get; }
+    Task<int> GetMoveAsync(Connect4Board env);
 }
