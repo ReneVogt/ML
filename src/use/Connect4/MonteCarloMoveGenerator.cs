@@ -7,7 +7,7 @@ sealed class MonteCarloMoveGenerator : IGenerateMoves
     const int TimeToThink = 500;
     const int NumberOfThreads = 1;
 
-    static readonly Random random = new Random();
+    static readonly Random random = new ();
 
     sealed class TreeNode(ulong key)
     {

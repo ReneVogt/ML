@@ -215,6 +215,7 @@ public sealed class Connect4Board
         Opponent = 2;
         history.Clear();
         Winner = 0;
+        SetValidMoves();
     }
     public Connect4Board Clone()
     {
