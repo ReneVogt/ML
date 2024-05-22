@@ -4,8 +4,10 @@ namespace Connect4;
 
 sealed class MonteCarloMoveGenerator : IGenerateMoves
 {
-    const int TimeToThink = 1000;
-    const int NumberOfThreads = 8;
+    const int TimeToThink = 500;
+    const int NumberOfThreads = 1;
+
+    static readonly Random random = new Random();
 
     sealed class TreeNode(ulong key)
     {
@@ -45,8 +47,15 @@ sealed class MonteCarloMoveGenerator : IGenerateMoves
         int action, ownSimulations;
         lock (node)
         {
+            var unsimulated = node.Simulations.Select((simulations, action) => (simulations, action)).Where(x => x.simulations == 0 && env.Height(x.action) < 6).Select(x => x.action).ToArray();
+            if (unsimulated.Length > 0)
+            {
+                var idx = random.Next(unsimulated.Length);
+                action = unsimulated[idx];
+            }
+            else
+                action = node.Simulations.Select((simulations, a) => (simulations, a)).Where(x => env.Height(x.a) < 6 && x.simulations > 0).MaxBy(x => (node.Wins[x.a]/x.simulations + C * Math.Sqrt(ln / x.simulations))).a;
             ownSimulations = node.OwnSimulations += 1;
-            action = node.Simulations.Select((simulations, a) => (simulations, a)).Where(x => env.Height(x.a) < 6).MaxBy(x => x.simulations == 0 ? double.MaxValue : (node.Wins[x.a]/x.simulations + C * Math.Sqrt(ln / x.simulations))).a;
             node.Simulations[action] += 1;
         }
 
