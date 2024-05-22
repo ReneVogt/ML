@@ -30,6 +30,9 @@
         {
             btRun = new Button();
             pnBoard = new PictureBox();
+            lbRed = new Label();
+            lbYellow = new Label();
+            ((System.ComponentModel.ISupportInitialize)pnBoard).BeginInit();
             SuspendLayout();
             // 
             // btRun
@@ -49,8 +52,33 @@
             pnBoard.Name = "pnBoard";
             pnBoard.Size = new Size(571, 430);
             pnBoard.TabIndex = 5;
+            pnBoard.TabStop = false;
             pnBoard.Paint += OnPaintBoard;
             pnBoard.MouseClick += OnBoardClicked;
+            // 
+            // lbRed
+            // 
+            lbRed.AutoEllipsis = true;
+            lbRed.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lbRed.ForeColor = Color.Red;
+            lbRed.Location = new Point(12, 17);
+            lbRed.Name = "lbRed";
+            lbRed.Size = new Size(222, 31);
+            lbRed.TabIndex = 6;
+            lbRed.Text = "Red";
+            lbRed.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lbYellow
+            // 
+            lbYellow.AutoEllipsis = true;
+            lbYellow.Font = new Font("Segoe UI", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lbYellow.ForeColor = Color.Yellow;
+            lbYellow.Location = new Point(361, 17);
+            lbYellow.Name = "lbYellow";
+            lbYellow.Size = new Size(222, 31);
+            lbYellow.TabIndex = 7;
+            lbYellow.Text = "Red";
+            lbYellow.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // MainForm
             // 
@@ -58,6 +86,8 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
             ClientSize = new Size(593, 516);
+            Controls.Add(lbYellow);
+            Controls.Add(lbRed);
             Controls.Add(pnBoard);
             Controls.Add(btRun);
             DoubleBuffered = true;
@@ -69,11 +99,14 @@
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Connect Four";
             Load += OnMainFormLoad;
+            ((System.ComponentModel.ISupportInitialize)pnBoard).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
         private Button btRun;
         private PictureBox pnBoard;
+        private Label lbRed;
+        private Label lbYellow;
     }
 }

@@ -78,6 +78,8 @@ namespace Connect4
 
         async Task RunGameAsync(CancellationToken cancellationToken)
         {
+            lbRed.Text = _redGenerator.Name;
+            lbYellow.Text = _yellowGenerator.Name;
             while (!(_environment.Finished || cancellationToken.IsCancellationRequested))
             {
                 var generator = _environment.Player == 1 ? _redGenerator : _yellowGenerator;
@@ -92,10 +94,10 @@ namespace Connect4
             switch (_environment.Winner)
             {
                 case 1:
-                    MessageBox.Show(this, "Red wins.", "Connect Four");
+                    MessageBox.Show(this, $"{_redGenerator.Name} (red) wins.", "Connect Four");
                     return;
                 case 2:
-                    MessageBox.Show(this, "Yellow wins.", "Connect Four");
+                    MessageBox.Show(this, $"{_yellowGenerator.Name} (yellow) wins.", "Connect Four");
                     return;
                 default:
                     MessageBox.Show(this, "Draw.", "Connect Four");
