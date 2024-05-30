@@ -4,6 +4,9 @@ sys.path.append('../../')
 import unittest
 from connect4.board import Connect4Board, GameFinishedError, ColumnFullError
 
+def _validMoves(env : Connect4Board) -> list[int]:
+    return [a for a in range(7) if env.is_valid(a)]
+
 class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
     def test_CorrectIndexer(self):
         env = Connect4Board()
@@ -39,19 +42,19 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
             player, opponent = opponent, player
 
             if i < 10:
-                self.assertEqual([0, 1, 2, 3, 4, 5, 6], env.ValidMoves)
+                self.assertEqual([0, 1, 2, 3, 4, 5, 6], _validMoves(env))
             elif i < 11:
-                self.assertEqual([0, 2, 3, 4, 5, 6], env.ValidMoves)
+                self.assertEqual([0, 2, 3, 4, 5, 6], _validMoves(env))
             elif i < 22:
-                self.assertEqual([2, 3, 4, 5, 6], env.ValidMoves)
+                self.assertEqual([2, 3, 4, 5, 6], _validMoves(env))
             elif i < 23:
-                self.assertEqual([2, 4, 5, 6], env.ValidMoves)
+                self.assertEqual([2, 4, 5, 6], _validMoves(env))
             elif i < 34:
-                self.assertEqual([4, 5, 6], env.ValidMoves)
+                self.assertEqual([4, 5, 6], _validMoves(env))
             elif i < 35:
-                self.assertEqual([4, 6], env.ValidMoves)
+                self.assertEqual([4, 6], _validMoves(env))
             elif i < 41:
-                self.assertEqual([6], env.ValidMoves)
+                self.assertEqual([6], _validMoves(env))
 
             if i < len(moves)-1:
                 self.assertEqual(Connect4Board.EMPTY, env.Winner)
@@ -61,7 +64,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertTrue(env.Full)
         self.assertTrue(env.Finished)
-        self.assertEqual([], env.ValidMoves)
+        self.assertEqual([], _validMoves(env))
         self.assertEqual("010101101010232323323232454545545454666666", env.gameKey)
 
         with self.assertRaises(GameFinishedError):
@@ -75,7 +78,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([1, 2, 3, 4, 5, 6], env.ValidMoves)
+        self.assertEqual([1, 2, 3, 4, 5, 6], _validMoves(env))
         self.assertEqual("000000", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -89,7 +92,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 2, 3, 4, 5, 6], env.ValidMoves)
+        self.assertEqual([0, 2, 3, 4, 5, 6], _validMoves(env))
         self.assertEqual("111111", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -103,7 +106,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 1, 3, 4, 5, 6], env.ValidMoves)
+        self.assertEqual([0, 1, 3, 4, 5, 6], _validMoves(env))
         self.assertEqual("222222", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -117,7 +120,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 1, 2, 4, 5, 6], env.ValidMoves)
+        self.assertEqual([0, 1, 2, 4, 5, 6], _validMoves(env))
         self.assertEqual("333333", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -131,7 +134,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 1, 2, 3, 5, 6], env.ValidMoves)
+        self.assertEqual([0, 1, 2, 3, 5, 6], _validMoves(env))
         self.assertEqual("444444", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -145,7 +148,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 1, 2, 3, 4, 6], env.ValidMoves)
+        self.assertEqual([0, 1, 2, 3, 4, 6], _validMoves(env))
         self.assertEqual("555555", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
@@ -159,7 +162,7 @@ class TestConnect4Board_Basics_FullColumns_Draw(unittest.TestCase):
         self.assertEqual(Connect4Board.EMPTY, env.Winner)
         self.assertFalse(env.Full)
         self.assertFalse(env.Finished)
-        self.assertEqual([0, 1, 2, 3, 4, 5], env.ValidMoves)
+        self.assertEqual([0, 1, 2, 3, 4, 5], _validMoves(env))
         self.assertEqual("666666", env.gameKey)
 
         with self.assertRaises(ColumnFullError):
