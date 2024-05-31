@@ -13,12 +13,12 @@ class Connect4Dqn(nn.Module):
 
         # input: [B,3,6,7]
 
-        self.conv = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1)    # [B,16,6,7]
-        self.flatten = nn.Flatten(start_dim=1) # [B, 672]
+        self.conv = nn.Conv2d(3, 128, kernel_size=4, stride=1, padding=1)    # [B,128,5,6]
+        self.flatten = nn.Flatten(start_dim=1) # [B, 3840]
 
-        self.fc1 = nn.Linear(672, 336)
-        self.fc2 = nn.Linear(336, 84)
-        self.fc3 = nn.Linear(84, 7)
+        self.fc1 = nn.Linear(3840, 1920)
+        self.fc2 = nn.Linear(1920, 640)
+        self.fc3 = nn.Linear(640, 7)
 
         self.loss = nn.MSELoss()
         self.optimizer = o.SGD(self.parameters(), lr)

@@ -103,7 +103,8 @@ class Connect4Agent():
             validmoves_batch = T.tensor(self.validmoves_memory[batch])
 
             targetModel.eval()
-            q_next = targetModel.forward(next_state_batch)
+            with T.no_grad():
+                q_next = targetModel.forward(next_state_batch)
 
             q_next[~validmoves_batch] = _NEGINF
             q_next[terminal_batch] = 0.0
