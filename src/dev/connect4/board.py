@@ -1,3 +1,5 @@
+import numpy as np
+
 class Connect4BoardError(Exception):
     """
     Base class for errors raised by the
@@ -53,7 +55,7 @@ class Connect4Board:
         self._winner = Connect4Board.EMPTY
         self._full = False
         self._history = []
-        self._state = 0
+        self._state = np.uint64(0)
 
     def __getitem__(self, position : tuple[int, int]) -> int:
         """
@@ -122,20 +124,20 @@ class Connect4Board:
         return board
     
     def _getColumnHeight(self, column : int) -> int:
-        return (self._state >> (9 * column)) & 7
+        return (self._state >> np.uint64(9 * column)) & np.uint64(7)
     def _setColumnHeight(self, column : int, height : int) -> None:
-        state = self._state & ~(7 << (9 * column))
-        self._state = state | (height << (9 * column))               
+        state = (self._state & ~(np.uint64(7) << np.uint64(9 * column)))
+        self._state = (state | (np.uint64(height) << np.uint64(9 * column)))
     def _getPlayerAt(self, column : int, row : int) -> int:
         if column < 0 or column > 6:
             return Connect4Board.EMPTY
         if row < 0 or row >= self._getColumnHeight(column):
             return Connect4Board.EMPTY
-        return ((self._state >> (9 * column + row + 3)) & 1) + 1
+        return int(((self._state >> np.uint64(9 * column + row + 3)) & np.uint64(1))) + 1
     def _setPlayerAt(self, column : int, row : int, player : int) -> int:
-        state = self._state & ~(1 << 9 * column + row + 3)
+        state = (self._state & ~(np.uint64(1) << np.uint64(9 * column + row + 3)))
         if player == Connect4Board.PLAYER2:
-            state |= 1 << (9 * column + row + 3)
+            state |= (np.uint64(1) << np.uint64(9 * column + row + 3))
         self._state = state
     
     def _getWinner(self, column, row, player) -> int:

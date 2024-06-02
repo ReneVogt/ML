@@ -82,7 +82,7 @@ class TestBoard2Dqn_BestAction(unittest.TestCase):
         
         model = TestModel(lambda x: T.Tensor([[10, 7, 8, 6, 5, 5, 5.5]]))
 
-        action = getBestAction(model, env)
+        action = getBestAction(model, createStateTensor(env), [a for a in range(7) if env.is_valid(a)])
         self.assertEqual(action, 2)
 
 
