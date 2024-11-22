@@ -15,9 +15,7 @@ def _playValidationGame(model : nn.Module, qplayer : int, mctsGames : int) -> Co
     mcts = Connect4MCTS(mctsGames)
     while not env.Finished:
         if qplayer == env.Player:
-            state = createStateTensor(env)
-            validMoves = [a for a in range(7) if env.is_valid(a)]
-            action = getBestAction(model, state, validMoves) 
+            action = getBestAction(model, env) 
         else:
             action = mcts.getMove(env)
         env.move(action)

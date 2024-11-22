@@ -39,10 +39,13 @@ class Connect4Board:
         return self._winner
     @property
     def Full(self) -> bool:
-        return self._full
+        return len(self._validMoves) == 0
     @property
     def Finished(self) -> bool:
         return self.Winner != Connect4Board.EMPTY or self.Full
+    @property
+    def ValidMoves(self) -> list[int]:
+        return self._validMoves
     @property
     def stateKey(self) -> int:
         return self._state
@@ -53,9 +56,9 @@ class Connect4Board:
     def __init__(self) -> None:
         self._player = Connect4Board.PLAYER1        
         self._winner = Connect4Board.EMPTY
-        self._full = False
         self._history = []
         self._state = np.uint64(0)
+        self._validMoves = [a for a in range(7)]
 
     def __getitem__(self, position : tuple[int, int]) -> int:
         """
@@ -95,24 +98,25 @@ class Connect4Board:
         self._setColumnHeight(action, row + 1)
 
         if row == 5:
-            self._full = not any(self.is_valid(a) for a in range(7))
+            self._validMoves.remove(action)
 
         self._winner = self._getWinner(action, row, self._player)
         self._history.append(action)
         self._player = Connect4Board.PLAYER2 if self._player == Connect4Board.PLAYER1 else Connect4Board.PLAYER1
 
     def is_valid(self, action : int) -> bool:
-        return action >= 0 and action < 7 and self._getColumnHeight(action) < 6
+        return action >= 0 and action < 7 and action in self._validMoves
 
     def undo(self) -> None:
         if len(self._history) == 0:
             return
         action = self._history.pop()
         row = self._getColumnHeight(action) - 1
+        if row == 5:
+            self._validMoves.append(action)
         self._setPlayerAt(action, row, Connect4Board.PLAYER1)
         self._setColumnHeight(action, row)
         self._winner = Connect4Board.EMPTY
-        self._full = False
     
     def clone(self) -> 'Connect4Board':
         board = Connect4Board()
@@ -120,7 +124,7 @@ class Connect4Board:
         board._winner = self._winner
         board._history = self._history.copy()
         board._player = self._player
-        board._full = self._full
+        board._validMoves = self._validMoves.copy()
         return board
     
     def _getColumnHeight(self, column : int) -> int:

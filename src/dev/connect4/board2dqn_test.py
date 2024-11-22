@@ -16,7 +16,7 @@ class TestModel(nn.Module):
 
 class TestBoard2Dqn_StateTennor(unittest.TestCase):
     def test_EmptyBoard_ZeroTensor(self):
-        expectedTensor = T.zeros(3, 6, 7, dtype=T.int64)
+        expectedTensor = T.zeros(3, 6, 7)
         expectedTensor[0,:,:] = 1
         board = Connect4Board()
         result = createStateTensor(board)
@@ -24,11 +24,11 @@ class TestBoard2Dqn_StateTennor(unittest.TestCase):
 
     def test_UsedBoard_Player1(self):
         board = Connect4Board()
-        expectedTensor = T.zeros(3, 6, 7, dtype=T.int64)
-        expectedTensor[0, :, : ] = 1
+        expectedTensor = T.zeros(3, 6, 7)
+        expectedTensor[0,:,:] = 1
 
         board.move(0)
-        expectedTensor[0, 0, 0] = 0 
+        expectedTensor[0, 0, 0] = 0
         expectedTensor[1, 0, 0] = 1
 
         board.move(1)
@@ -36,20 +36,20 @@ class TestBoard2Dqn_StateTennor(unittest.TestCase):
         expectedTensor[2, 0, 1] = 1
 
         board.move(1)
-        expectedTensor[0, 1, 1] = 0 
+        expectedTensor[0, 1, 1] = 0
         expectedTensor[1, 1, 1] = 1 
 
         board.move(2)
-        expectedTensor[0, 0, 2] = 0 
-        expectedTensor[2, 0, 2] = 1 
+        expectedTensor[0, 0, 2] = 0
+        expectedTensor[2, 0, 2] = 1
         
         result = createStateTensor(board)
         self.assertTrue(T.equal(result, expectedTensor))
 
     def test_UsedBoard_Player2(self):
         board = Connect4Board()
-        expectedTensor = T.zeros(3, 6, 7, dtype=T.int64)
-        expectedTensor[0, :, : ] = 1
+        expectedTensor = T.zeros(3, 6, 7)
+        expectedTensor[0,:,:] = 1
 
         board.move(0)
         expectedTensor[0, 0, 0] = 0
@@ -57,32 +57,34 @@ class TestBoard2Dqn_StateTennor(unittest.TestCase):
 
         board.move(1)
         expectedTensor[0, 0, 1] = 0
-        expectedTensor[1, 0, 1] = 1
+        expectedTensor[1, 0, 1] = 1 
 
         board.move(1)
-        expectedTensor[0, 1, 1] = 0 
+        expectedTensor[0, 1, 1] = 0
         expectedTensor[2, 1, 1] = 1 
 
-        board.move(2)
-        expectedTensor[0, 0, 2] = 0 
-        expectedTensor[1, 0, 2] = 1 
 
         board.move(2)
-        expectedTensor[0, 1, 2] = 0 
-        expectedTensor[2, 1, 2] = 1 
+        expectedTensor[0, 0, 2] = 0
+        expectedTensor[1, 0, 2] = 1 
+
+
+        board.move(2)
+        expectedTensor[0, 1, 2] = 0
+        expectedTensor[2, 1, 2] = 1
 
         result = createStateTensor(board)
         self.assertTrue(T.equal(result, expectedTensor))
 
 class TestBoard2Dqn_BestAction(unittest.TestCase):
-    def test_BestAction(self):
+    def test_BestAction_Player1(self):
         env = Connect4Board()
-        env._setColumnHeight(0, 6)
-        env._setColumnHeight(3, 6)
+        for move in [0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 1]:
+            env.move(move)
         
         model = TestModel(lambda x: T.Tensor([[10, 7, 8, 6, 5, 5, 5.5]]))
 
-        action = getBestAction(model, createStateTensor(env), [a for a in range(7) if env.is_valid(a)])
+        action = getBestAction(model, env)
         self.assertEqual(action, 2)
 
 

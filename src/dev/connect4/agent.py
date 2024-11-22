@@ -8,13 +8,7 @@ from connect4.board2dqn import getBestAction
 
 
 def calculateReward(board : Connect4Board) -> float:
-    if board.Winner != Connect4Board.EMPTY:
-        return 1
-    
-    if board.Full:
-        return -0.1 if board.Player == Connect4Board.PLAYER2 else 0.2
-    
-    return -0.1 if board.Player == Connect4Board.PLAYER2 else 0
+    return 1 if board.Winner != Connect4Board.EMPTY else 0 if board.Full else -0.1
 
 _NEGINF = float('-inf')
 
@@ -69,14 +63,14 @@ class Connect4Agent():
         self.memory_counter += 1
 
     @T.no_grad()
-    def getTrainingAction(self, state : T.Tensor, validMoves : list[int]) -> int:
-        if len(validMoves) == 1:
-            return validMoves[0]
+    def getTrainingAction(self, env : Connect4Board) -> int:
+        if len(env.ValidMoves) == 1:
+            return env.ValidMoves[0]
         
         if np.random.random() > self.epsilon:
-            return getBestAction(self.evaluationModel, state, validMoves)
+            return getBestAction(self.evaluationModel, env)
         
-        return np.random.choice(validMoves)
+        return np.random.choice(env.ValidMoves)
     
     def learn(self) -> None:
         if self.memory_counter < self.batch_size:
