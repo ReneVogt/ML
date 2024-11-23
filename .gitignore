@@ -358,5 +358,5 @@ test.ipynb
 !src/dev/policygradient/connect4.nn
 sketch.ipynb
 
-**/letterClassifier/data/
+# tensors (mostly training data)
 *.pt
