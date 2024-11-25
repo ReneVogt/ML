@@ -28,28 +28,29 @@
         /// </summary>
         private void InitializeComponent()
         {
-            pnImage = new Panel();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            pnImage = new SketchControl();
             btClear = new Button();
-            pnPen = new Panel();
-            tbPenSize = new TrackBar();
-            ((System.ComponentModel.ISupportInitialize)tbPenSize).BeginInit();
+            pbPreview = new PictureBox();
+            ((System.ComponentModel.ISupportInitialize)pbPreview).BeginInit();
             SuspendLayout();
             // 
             // pnImage
             // 
-            pnImage.BackColor = Color.White;
+            pnImage.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnImage.BackgroundImage = (Image)resources.GetObject("pnImage.BackgroundImage");
             pnImage.BackgroundImageLayout = ImageLayout.None;
             pnImage.BorderStyle = BorderStyle.Fixed3D;
             pnImage.Location = new Point(12, 12);
             pnImage.Name = "pnImage";
+            pnImage.PenSize = 20F;
             pnImage.Size = new Size(390, 390);
             pnImage.TabIndex = 0;
-            pnImage.MouseDown += pnImage_MouseDown;
-            pnImage.MouseMove += pnImage_MouseMove;
-            pnImage.MouseUp += pnImage_MouseUp;
+            pnImage.MouseUp += OnSketchMouseUp;
             // 
             // btClear
             // 
+            btClear.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btClear.AutoSize = true;
             btClear.Image = Properties.Resources.trash;
             btClear.Location = new Point(408, 12);
@@ -59,34 +60,23 @@
             btClear.UseVisualStyleBackColor = true;
             btClear.Click += OnClearClicked;
             // 
-            // pnPen
+            // pbPreview
             // 
-            pnPen.Location = new Point(408, 54);
-            pnPen.Name = "pnPen";
-            pnPen.Size = new Size(38, 36);
-            pnPen.TabIndex = 2;
-            // 
-            // tbPenSize
-            // 
-            tbPenSize.AutoSize = false;
-            tbPenSize.Location = new Point(410, 96);
-            tbPenSize.Maximum = 300;
-            tbPenSize.Minimum = 1;
-            tbPenSize.Name = "tbPenSize";
-            tbPenSize.Orientation = Orientation.Vertical;
-            tbPenSize.Size = new Size(36, 204);
-            tbPenSize.TabIndex = 3;
-            tbPenSize.TickStyle = TickStyle.None;
-            tbPenSize.Value = 1;
-            tbPenSize.ValueChanged += OnPenSizeChanged;
+            pbPreview.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            pbPreview.BorderStyle = BorderStyle.FixedSingle;
+            pbPreview.Location = new Point(408, 370);
+            pbPreview.Name = "pbPreview";
+            pbPreview.Size = new Size(32, 32);
+            pbPreview.SizeMode = PictureBoxSizeMode.CenterImage;
+            pbPreview.TabIndex = 4;
+            pbPreview.TabStop = false;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(452, 436);
-            Controls.Add(tbPenSize);
-            Controls.Add(pnPen);
+            Controls.Add(pbPreview);
             Controls.Add(btClear);
             Controls.Add(pnImage);
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -95,16 +85,15 @@
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Letter classification";
-            ((System.ComponentModel.ISupportInitialize)tbPenSize).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pbPreview).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Panel pnImage;
+        private SketchControl pnImage;
         private Button btClear;
-        private Panel pnPen;
-        private TrackBar tbPenSize;
+        private PictureBox pbPreview;
     }
 }
